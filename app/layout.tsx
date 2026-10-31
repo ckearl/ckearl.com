@@ -1,34 +1,35 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Noto_Sans, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/ThemeProvider";
 
-const inter = Inter({
+const notoSans = Noto_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-body",
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const pixelify = Pixelify_Sans({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-chrome",
   display: "swap",
 });
+
+const description =
+  "Side projects by Christopher Kearl, a software engineer in Provo, UT: Hanja Chain, Spotifast, Listening Stats, Memory Graph and more.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ckearl.com"),
   title: "Christopher Kearl | Software Engineer & Developer",
-  description:
-    "Software Engineer specializing in full-stack development, cloud engineering, and compliance automation. Former musician with Ritt Momney. MS in Information Systems Management from BYU.",
+  description,
   keywords: [
     "Christopher Kearl",
     "Software Engineer",
-    "Full-stack Developer",
+    "Side Projects",
     "TypeScript",
     "React",
     "Next.js",
     "Python",
     "AWS",
-    "Cloud Engineering",
     "Ritt Momney",
   ],
   authors: [{ name: "Christopher Kearl" }],
@@ -37,15 +38,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://ckearl.com",
     title: "Christopher Kearl | Software Engineer & Developer",
-    description:
-      "Software Engineer specializing in full-stack development, cloud engineering, and compliance automation.",
-    siteName: "Christopher Kearl Portfolio",
+    description,
+    siteName: "Christopher Kearl",
   },
   twitter: {
     card: "summary_large_image",
     title: "Christopher Kearl | Software Engineer & Developer",
-    description:
-      "Software Engineer specializing in full-stack development, cloud engineering, and compliance automation.",
+    description,
   },
 };
 
@@ -55,19 +54,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
-      >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
+    <html lang="en" className={`${notoSans.variable} ${pixelify.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
