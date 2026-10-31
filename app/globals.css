@@ -80,6 +80,22 @@ body {
   margin-left: auto;
 }
 
+@media (max-width: 479px) {
+  .menu-bar {
+    gap: 0;
+    padding: 0 0.4rem;
+    font-size: 14px;
+  }
+
+  .menu-bar a {
+    padding: 0.1rem 0.35rem;
+  }
+
+  .menu-clock {
+    display: none;
+  }
+}
+
 /* Windows */
 
 .window {
@@ -173,6 +189,60 @@ body {
   padding: 0.25rem 0.35rem 0.4rem;
 }
 
+.logo-hint p {
+  color: var(--slate-mid);
+}
+
+/* Small screens keep the hero short, so most of it stays open for dragging.
+   The Note Pad folds into the logo panel, and the facts live in About. */
+@media (max-width: 959px) {
+  .note-window,
+  .hero-window .about-facts {
+    display: none;
+  }
+
+  .hero {
+    gap: 0.9rem;
+    padding-top: 0.75rem;
+  }
+
+  .hero-window .logo-panel {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .hero-window .logo-text {
+    flex-basis: 100%;
+  }
+
+  .hero-window .logo-text h1 {
+    font-size: clamp(1.6rem, 8vw, 2.25rem);
+    white-space: nowrap;
+  }
+
+  .hero-window .logo-text p {
+    max-width: none;
+    margin-top: 0.4rem;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .desktop-icon {
+    font-size: 13px;
+  }
+
+  .desktop-icon .pixel-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+@media (min-width: 960px) {
+  .logo-hint {
+    display: none;
+  }
+}
+
 .note-touch {
   display: none;
 }
@@ -238,7 +308,7 @@ body {
 
   .note-window {
     position: absolute;
-    top: 24.5rem;
+    top: 19.5rem;
     left: max(32rem, calc(50vw - 3rem));
     width: 19rem;
   }
@@ -428,13 +498,13 @@ body {
 
 .logo-text h1 {
   font-family: var(--font-stack-chrome);
-  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-size: clamp(2.5rem, 6vw, 4rem);
   font-weight: 500;
   line-height: 1;
 }
 
 .logo-text p {
-  max-width: 30ch;
+  max-width: 46ch;
   margin-top: 0.75rem;
   font-size: 1rem;
   line-height: 1.5;
@@ -460,81 +530,6 @@ body {
   .about-facts {
     grid-template-columns: auto 1fr;
   }
-}
-
-/* Keycaps */
-
-.keyboard {
-  --u: clamp(2.6rem, 8.5vw, 3.5rem);
-  display: grid;
-  gap: 3px;
-  padding: 5px;
-  background: var(--slate-deep);
-  border-radius: 6px;
-}
-
-.key-row {
-  display: flex;
-  gap: 3px;
-}
-
-.key {
-  display: block;
-  flex: none;
-  width: var(--u);
-  height: var(--u);
-  padding: 4px 5px 8px;
-  background: var(--skirt);
-  border-radius: 6px;
-  box-shadow: inset 0 -2px 2px color-mix(in srgb, var(--slate-deep) 40%, transparent);
-}
-
-.key-face {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-family: var(--font-body), sans-serif;
-  font-size: calc(var(--u) * 0.32);
-  color: var(--legend);
-  background: linear-gradient(160deg, var(--face-light), var(--face));
-  border-radius: 4px;
-}
-
-.key-cream {
-  --skirt: #cfc3a6;
-  --face: #efe6d2;
-  --face-light: #fbf6e8;
-  --legend: var(--slate);
-}
-
-.key-sage {
-  --skirt: #93a78f;
-  --face: #b6c6ac;
-  --face-light: #cfdcc5;
-  --legend: var(--slate-deep);
-}
-
-.key-ink {
-  --skirt: #171f26;
-  --face: #2c3a45;
-  --face-light: #3d4e5b;
-  --legend: var(--tan-light);
-}
-
-.key-enter {
-  flex: 1;
-  width: auto;
-}
-
-.key-enter .key-face {
-  font-size: calc(var(--u) * 0.24);
-}
-
-.key.is-pressed,
-.key-enter:active {
-  padding-top: 7px;
-  padding-bottom: 5px;
 }
 
 /* Project list */

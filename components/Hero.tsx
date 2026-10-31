@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Keycaps from "@/components/Keycaps";
 import PixelIcon, { type IconName } from "@/components/PixelIcon";
 import Window from "@/components/Window";
 import { personalInfo } from "@/data/resume";
@@ -20,6 +19,13 @@ const icons: { label: string; href: string; icon: IconName }[] = [
   { label: "About", href: "#about", icon: "folder" },
   { label: "Contact", href: "#contact", icon: "mail" },
 ];
+
+const hint = (
+  <>
+    <p className="note-mouse">Click and drag anywhere on the desktop to drop ASCII.</p>
+    <p className="note-touch">Drag your finger to drop ASCII.</p>
+  </>
+);
 
 // Distance between characters along a drag, in pixels.
 const TRAIL_SPACING = 7;
@@ -147,10 +153,10 @@ export default function Hero() {
 
       <Window title="About Christopher Kearl" className="hero-window">
         <div className="logo-panel">
-          <Keycaps />
           <div className="logo-text">
             <h1>Christopher Kearl</h1>
             <p>I automate compliance at work. These are the things I build after hours.</p>
+            <div className="logo-hint">{hint}</div>
           </div>
         </div>
         <dl className="about-facts">
@@ -164,8 +170,7 @@ export default function Hero() {
       </Window>
 
       <Window title="Note Pad" className="note-window">
-        <p className="note-mouse">Click and drag anywhere on the desktop to drop ASCII.</p>
-        <p className="note-touch">Drag a finger across the desktop to drop ASCII.</p>
+        {hint}
       </Window>
 
       <nav className="desktop-icons" aria-label="Sections">
