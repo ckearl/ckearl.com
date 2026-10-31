@@ -1,6 +1,6 @@
-import Hero from "@/components/Hero";
-import MenuBar from "@/components/MenuBar";
-import ProjectBrowser from "@/components/ProjectBrowser";
+import Hero from "@/components/new-design/Hero";
+import MenuBar from "@/components/new-design/MenuBar";
+import ProjectBrowser from "@/components/new-design/ProjectBrowser";
 import {
   achievements,
   certifications,

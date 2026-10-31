@@ -19,6 +19,7 @@ const description =
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ckearl.com"),
+  robots: { index: false, follow: false },
   title: "Christopher Kearl | Software Engineer & Developer",
   description,
   keywords: [
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://ckearl.com",
+    url: "https://ckearl.com/new-design",
     title: "Christopher Kearl | Software Engineer & Developer",
     description,
     siteName: "Christopher Kearl",

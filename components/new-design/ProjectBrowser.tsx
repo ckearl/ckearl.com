@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import { useRef, useState, type KeyboardEvent } from "react";
-import PixelIcon from "@/components/PixelIcon";
-import Window from "@/components/Window";
-import { projects } from "@/data/projects";
+import PixelIcon from "@/components/new-design/PixelIcon";
+import Window from "@/components/new-design/Window";
+import { projects } from "@/data/new-design/projects";
 
 const largest = Math.max(...projects.map((project) => project.lines));
 const totalLines = projects.reduce((sum, project) => sum + project.lines, 0);
