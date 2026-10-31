@@ -9,7 +9,7 @@ import { projects } from "@/data/projects";
 const largest = Math.max(...projects.map((project) => project.lines));
 const totalLines = projects.reduce((sum, project) => sum + project.lines, 0);
 
-export default function ProjectBrowser({ intro }: { intro: React.ReactNode }) {
+export default function ProjectBrowser() {
   const [selectedId, setSelectedId] = useState(projects[0].id);
   const listRef = useRef<HTMLUListElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
@@ -36,40 +36,37 @@ export default function ProjectBrowser({ intro }: { intro: React.ReactNode }) {
   };
 
   return (
-    <div className="stack" id="top">
-      <Window title="About Christopher Kearl" className="about-window">
-        {intro}
-        <div id="projects" className="project-list" tabIndex={-1}>
-          <div className="project-head">
-            <span>{projects.length} side projects</span>
-            <span>{totalLines.toLocaleString("en-US")} lines I wrote</span>
-          </div>
-          <ul ref={listRef} onKeyDown={moveFocus}>
-            {projects.map((project) => (
-              <li key={project.id}>
-                <button
-                  type="button"
-                  className="project-row"
-                  aria-current={project.id === selectedId ? "true" : undefined}
-                  onClick={() => select(project.id)}
-                >
-                  <PixelIcon name={project.icon} />
-                  <span className="project-text">
-                    <strong>{project.name}</strong>
-                    <span>{project.summary}</span>
-                  </span>
-                  <span className="project-size">
-                    {project.lines.toLocaleString("en-US")}
-                  </span>
-                  <span className="bar" aria-hidden="true">
-                    <span style={{ width: `${(project.lines / largest) * 100}%` }} />
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+    <div className="stack">
+      <div className="project-list">
+        <div className="project-head">
+          <span>{projects.length} side projects</span>
+          <span>{totalLines.toLocaleString("en-US")} lines I wrote</span>
         </div>
-      </Window>
+        <ul ref={listRef} onKeyDown={moveFocus}>
+          {projects.map((project) => (
+            <li key={project.id}>
+              <button
+                type="button"
+                className="project-row"
+                aria-current={project.id === selectedId ? "true" : undefined}
+                onClick={() => select(project.id)}
+              >
+                <PixelIcon name={project.icon} />
+                <span className="project-text">
+                  <strong>{project.name}</strong>
+                  <span>{project.summary}</span>
+                </span>
+                <span className="project-size">
+                  {project.lines.toLocaleString("en-US")}
+                </span>
+                <span className="bar" aria-hidden="true">
+                  <span style={{ width: `${(project.lines / largest) * 100}%` }} />
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="info-slot" ref={infoRef}>
         <Window key={selected.id} title={`${selected.name} Info`} className="info-window">
