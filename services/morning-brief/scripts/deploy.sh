@@ -15,4 +15,5 @@ sam deploy --parameter-overrides \
   "GoogleClientId=$GOOGLE_CLIENT_ID" \
   "GoogleClientSecret=$GOOGLE_CLIENT_SECRET" \
   "GoogleRefreshToken=$GOOGLE_REFRESH_TOKEN" \
+  "TodosKeyHash=$TODOS_KEY_HASH" \
   "$@"

@@ -9,6 +9,9 @@ Design: `docs/superpowers/specs/2026-10-31-morning-brief-design.md`.
 The page posts the password to `POST /brief/session` for a token that lasts 30 days, then sends
 that token to `GET /brief/today`. Changing `BRIEF_TOKEN_SECRET` signs everyone out.
 
+An iPhone Shortcut sends the Reminders list to `POST /brief/todos` before the brief runs, as
+`{"items": [{"title", "due", "notes"}]}` with its own key, which can do nothing else.
+
 Listening comes from the `spotify_stats` snapshot in S3. The ski report only appears in season
 when 8 or more inches is forecast for the Cottonwoods in the next three days.
 

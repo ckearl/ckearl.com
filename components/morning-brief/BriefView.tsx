@@ -6,13 +6,19 @@ import type { Brief } from "@/lib/morning-brief/types";
 
 const stateLabels = { ok: "OK", stale: "Old", failed: "Failed" };
 
+function dueLabel(due: string, today: string) {
+  if (due < today) return "Overdue";
+  if (due === today) return "Due today";
+  return `Due ${new Date(`${due}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
 export default function BriefView({ brief, stale }: { brief: Brief; stale?: boolean }) {
   const dateLabel = new Date(`${brief.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  const { weather, training, listening, words, ski } = brief;
+  const { todos, weather, training, listening, words, ski } = brief;
 
   return (
     <>
@@ -54,6 +60,26 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </li>
               ))}
             </ul>
+          </BriefWindow>
+        )}
+
+        {todos && (
+          <BriefWindow title={todos.list}>
+            {todos.items.length > 0 ? (
+              <ul className="plan-list">
+                {todos.items.map((item, index) => (
+                  <li key={`${index}-${item.title}`}>
+                    <p>
+                      <strong>{item.title}</strong>
+                      {item.due && <span className="muted"> ({dueLabel(item.due, brief.date)})</span>}
+                    </p>
+                    {item.notes && <p className="muted">{item.notes}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nothing left on the list.</p>
+            )}
           </BriefWindow>
         )}
 

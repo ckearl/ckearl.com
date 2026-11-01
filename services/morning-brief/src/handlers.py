@@ -1,8 +1,9 @@
 import json
 import logging
 import os
+from datetime import datetime
 
-from brief import assemble, auth, store
+from brief import assemble, auth, config, store, todos
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -50,3 +51,14 @@ def today(event, _context):
     if brief is None:
         return respond(event, 404, {"error": "no brief yet"})
     return respond(event, 200, brief)
+
+
+def receive_todos(event, _context):
+    if not auth.todos_key_matches(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    try:
+        items = todos.parse(event.get("body") or "")
+    except ValueError:
+        return respond(event, 400, {"error": "invalid list"})
+    store.save_todos({"items": items, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
+    return respond(event, 200, {"received": len(items)})

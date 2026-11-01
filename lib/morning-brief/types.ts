@@ -46,6 +46,11 @@ export type Brief = {
     trainingWindows: TrainingWindow[];
   };
   schedule?: ScheduleItem[];
+  todos?: {
+    list: string;
+    receivedAt: string;
+    items: { title: string; due?: string; notes?: string }[]; // due is "YYYY-MM-DD"
+  };
   gamePlan?: { task: string; estimate: string; why: string }[];
   training?: {
     focus: string;

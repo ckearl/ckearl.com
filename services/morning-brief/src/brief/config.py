@@ -45,6 +45,9 @@ TEAMS = [
     {"path": "soccer/eng.1", "id": "367", "abbr": "TOT", "name": "Tottenham", "bg": "#ffffff", "fg": "#0b1426"},
 ]
 
+# The shared Reminders list, named exactly as it is on the phone.
+TODO_LIST = "to do @ 집"
+
 # Newest stories from each feed until Claude ranks them.
 NEWS = [
     {

@@ -136,6 +136,16 @@ export const sampleBrief: Brief = {
     },
     { start: "19:30", end: "21:00", title: "Basketball", calendar: "personal" },
   ],
+  todos: {
+    list: "to do @ 집",
+    receivedAt: "2026-11-02T04:00:00-07:00",
+    items: [
+      { title: "Replace the furnace filter", due: "2026-10-30" },
+      { title: "Book the car inspection", due: "2026-11-02" },
+      { title: "Blow out the sprinklers", due: "2026-11-05", notes: "Before the first hard freeze" },
+      { title: "Hang the shelf" },
+    ],
+  },
   gamePlan: [
     { task: "Replace the furnace filter", estimate: "10 min", why: "Quick, and the first real cold nights are this week." },
     { task: "Blow out the sprinklers", estimate: "45 min", why: "Dry today, and overnight lows drop below 30 by Thursday." },
