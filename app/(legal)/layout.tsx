@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans, Pixelify_Sans } from "next/font/google";
-import "../(new-design)/new-design/globals.css";
+import "../(new-design)/globals.css";
 import "./legal.css";
 
 const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });

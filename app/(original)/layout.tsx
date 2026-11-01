@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: false },
   title: "Christopher Kearl | Software Engineer & Developer",
   description:
     "Software Engineer specializing in full-stack development, cloud engineering, and compliance automation. Former musician with Ritt Momney. MS in Information Systems Management from BYU.",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://ckearl.com",
+    url: "https://ckearl.com/old-design",
     title: "Christopher Kearl | Software Engineer & Developer",
     description:
       "Software Engineer specializing in full-stack development, cloud engineering, and compliance automation.",
