@@ -1,0 +1,34 @@
+.legal {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 1.25rem 1rem;
+}
+
+.legal-window {
+  width: min(100%, 38rem);
+}
+
+.legal-window .window-body {
+  margin: 3px;
+  padding: 1.1rem 1.25rem;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--slate-deep);
+  background: var(--paper);
+  border: 1px solid var(--slate);
+}
+
+.legal-window p + p {
+  margin-top: 0.9rem;
+}
+
+.legal-window a {
+  color: #16507f;
+  text-decoration: underline;
+}
+
+.legal-window .legal-date {
+  font-size: 15px;
+  color: var(--slate-mid);
+}
