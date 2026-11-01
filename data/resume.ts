@@ -228,12 +228,6 @@ export const certifications = [
 
 export const achievements = [
   {
-    title: "Musician - Ritt Momney",
-    description:
-      "Former Guitarist/Pianist of indie band with multi-millions of total streams across Spotify, Apple Music, and YouTube",
-    icon: "music",
-  },
-  {
     title: "Korean Language Fluency",
     description:
       "Fluent speaker through 2 years of service in Busan, South Korea",
@@ -244,6 +238,11 @@ export const achievements = [
     description:
       "Collected and donated toys to Primary Children's Hospital for Eagle Scout project",
     icon: "award",
+  },
+  {
+    title: "Music",
+    description: "Played guitar and piano in the indie band Ritt Momney until 2018",
+    icon: "music",
   },
 ];
 

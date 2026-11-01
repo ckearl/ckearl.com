@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import DesktopWindow from "@/components/new-design/DesktopWindow";
 import PixelIcon, { type IconName } from "@/components/new-design/PixelIcon";
-import Window from "@/components/new-design/Window";
 import { personalInfo } from "@/data/resume";
 import { AsciiPile } from "@/lib/asciiPile";
 
 const facts = [
   { label: "Day job", value: "Software engineer, Marriott International" },
   { label: "Education", value: "MS Information Systems Management, BYU" },
-  { label: "Before that", value: "Guitarist and pianist in Ritt Momney" },
+  { label: "Languages", value: "English, Korean" },
   { label: "Location", value: personalInfo.location },
 ];
 
@@ -151,7 +151,7 @@ export default function Hero() {
     <header className="hero" id="top" ref={heroRef}>
       <canvas className="hero-canvas" ref={canvasRef} aria-hidden="true" />
 
-      <Window title="About Christopher Kearl" className="hero-window">
+      <DesktopWindow title="About Christopher Kearl" className="hero-window">
         <div className="logo-panel">
           <div className="logo-text">
             <h1>Christopher Kearl</h1>
@@ -167,11 +167,11 @@ export default function Hero() {
             </div>
           ))}
         </dl>
-      </Window>
+      </DesktopWindow>
 
-      <Window title="Note Pad" className="note-window">
+      <DesktopWindow title="Note Pad" className="note-window">
         {hint}
-      </Window>
+      </DesktopWindow>
 
       <nav className="desktop-icons" aria-label="Sections">
         {icons.map((item) => (

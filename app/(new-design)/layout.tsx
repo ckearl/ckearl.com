@@ -30,7 +30,6 @@ export const metadata: Metadata = {
     "Next.js",
     "Python",
     "AWS",
-    "Ritt Momney",
   ],
   authors: [{ name: "Christopher Kearl" }],
   openGraph: {

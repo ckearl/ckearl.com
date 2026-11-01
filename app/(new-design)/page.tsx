@@ -75,8 +75,7 @@ export default function Home() {
               <p>
                 I&apos;m a software engineer in {personalInfo.location}. At Marriott I&apos;m the
                 sole engineer on the compliance and security automation that 30+ internal teams
-                rely on. Before that I played guitar and piano in Ritt Momney, and I still end up
-                building a lot of tools around music.
+                rely on. After hours, most of what I build comes back to language and music.
               </p>
               <ul className="about-list">
                 {achievements.map((achievement) => (

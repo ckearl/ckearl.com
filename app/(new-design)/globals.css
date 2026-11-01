@@ -147,6 +147,35 @@ body {
   padding: 0.6rem;
 }
 
+.desktop-window .window-box {
+  padding: 0;
+  cursor: pointer;
+}
+
+/* A larger tap target than the 13px box. */
+.desktop-window .window-box::after {
+  content: "";
+  position: absolute;
+  inset: -0.6rem;
+}
+
+.desktop-window .window-box:hover,
+.desktop-window .window-box:active {
+  background: var(--tan-dark);
+}
+
+/* A dash in the box marks a window that's minimized. */
+.desktop-window.is-minimized .window-box {
+  background-image: linear-gradient(var(--slate-deep), var(--slate-deep));
+  background-position: center;
+  background-size: 7px 1px;
+  background-repeat: no-repeat;
+}
+
+.desktop-window.is-minimized {
+  padding-bottom: 3px;
+}
+
 /* Hero desktop */
 
 .hero {
@@ -306,11 +335,11 @@ body {
     margin-left: max(0px, calc(50vw - 42rem));
   }
 
+  /* In the page flow, so the Note Pad can't overlap the About window at any
+     height, and follows it up when it's minimized. */
   .note-window {
-    position: absolute;
-    top: 19.5rem;
-    left: max(32rem, calc(50vw - 3rem));
     width: 19rem;
+    margin-left: calc(max(0px, 50vw - 42rem) + 2rem);
   }
 
   .desktop-icons {
