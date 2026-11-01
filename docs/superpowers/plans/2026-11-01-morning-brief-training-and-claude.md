@@ -62,7 +62,7 @@ Compare yesterday's plan with what Garmin recorded, then check last night's slee
 |---|---|
 | Workout came up short | Drop the missed work rather than cramming it in, and keep today as planned |
 | Workout went harder than planned | Count it as the hard day, and turn the next hard session easy |
-| Poor sleep or low HRV | Swap a hard session for an easy one |
+| Poor sleep or low HRV, with sleep data for each of the last three days | Swap a hard session for an easy one |
 | Unplanned game or activity | Count it as load, and move the next hard session back if needed |
 
 ### Notes
@@ -72,9 +72,13 @@ Compare yesterday's plan with what Garmin recorded, then check last night's slee
 - Show an injury caution. This isn't coaching or medical advice.
 
 ### Open
-- Whether Garmin's Personal API returns sleep, HRV and workout intensity. If not, the fallbacks
-  are Strava for workouts or Health Auto Export for Apple Watch data.
 - Current weekly mileage, swim volume and easy pace.
+
+### Garmin data
+The Personal API returns sleep, HRV, workouts, training effect, intensity minutes, resting heart
+rate, stress and Body Battery. It doesn't offer training status, readiness or VO2 max. The watch
+isn't always worn overnight, so the sleep rule applies only when sleep data exists for each of
+the last three days. Otherwise it's skipped.
 
 ## Cut
 Sports trade and signing rumors, which have no clean source. Keep injuries and completed trades.
