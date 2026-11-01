@@ -19,8 +19,8 @@ def cors_headers(event: dict) -> dict:
     allowed = os.environ.get("ALLOWED_ORIGINS", "").split(",")
     return {
         "Access-Control-Allow-Origin": origin if origin in allowed else allowed[0],
-        "Access-Control-Allow-Headers": "X-Brief-Password",
-        "Access-Control-Allow-Methods": "GET,OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization,Content-Type",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         "Vary": "Origin",
     }
 
@@ -31,6 +31,16 @@ def respond(event: dict, status: int, body: dict) -> dict:
         "headers": {"Content-Type": "application/json", "Cache-Control": "no-store", **cors_headers(event)},
         "body": json.dumps(body, ensure_ascii=False),
     }
+
+
+def session(event, _context):
+    try:
+        password = json.loads(event.get("body") or "{}").get("password", "")
+    except (AttributeError, ValueError):
+        password = ""
+    if not auth.password_matches(password):
+        return respond(event, 401, {"error": "unauthorized"})
+    return respond(event, 200, {"token": auth.issue_token()})
 
 
 def today(event, _context):

@@ -6,6 +6,19 @@ TIMEZONE = ZoneInfo("America/Denver")
 LATITUDE = 40.2338
 LONGITUDE = -111.6585
 
+# Alta, for the Cottonwoods snow forecast.
+SKI_LATITUDE = 40.5885
+SKI_LONGITUDE = -111.6386
+SKI_MONTHS = {11, 12, 1, 2, 3, 4}
+SKI_STORM_INCHES = 8
+SKI_WINDOW_DAYS = 3
+# Label and NRCS SNOTEL station. These are stations near the resorts, not resort reports.
+SKI_STATIONS = [
+    ("Snowbird", "766:UT:SNTL"),
+    ("Brighton and Solitude", "366:UT:SNTL"),
+    ("Park City", "814:UT:SNTL"),
+]
+
 ALL_TEAMS = None
 
 # ESPN path, strip label, days to look back, followed teams (lowercase ESPN abbreviations).

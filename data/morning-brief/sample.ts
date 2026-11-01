@@ -200,10 +200,9 @@ export const sampleBrief: Brief = {
     summary: "A storm could bring 8 to 12 inches to the Cottonwoods by Thursday.",
     take: "Resorts aren't open yet, so this is one to watch.",
     resorts: [
-      { name: "Snowbird", base: '14"', new24h: '0"', new48h: '2"', lifts: "Closed" },
-      { name: "Brighton", base: '11"', new24h: '0"', new48h: '1"', lifts: "Closed" },
-      { name: "Solitude", base: '12"', new24h: '0"', new48h: '1"', lifts: "Closed" },
-      { name: "Park City", base: '4"', new24h: '0"', new48h: '0"', lifts: "Closed" },
+      { name: "Snowbird", base: '14"', new24h: '0"', new48h: '2"' },
+      { name: "Brighton and Solitude", base: '11"', new24h: '0"', new48h: '1"' },
+      { name: "Park City", base: '4"', new24h: '0"', new48h: '0"' },
     ],
   },
   news: [

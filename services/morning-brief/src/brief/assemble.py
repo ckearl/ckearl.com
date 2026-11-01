@@ -5,14 +5,16 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from brief import config, news, scores, teams, weather, words
+from brief import config, listening, news, scores, ski, teams, weather, words
 
 logger = logging.getLogger(__name__)
 
 
 def collect(name: str, label: str, fetch: Callable[[], Any], brief: dict, stamp: str) -> None:
     try:
-        brief[name] = fetch()
+        value = fetch()
+        if value is not None:
+            brief[name] = value
         brief["sources"].append({"name": label, "state": "ok", "note": f"Updated {stamp}"})
     except Exception as error:
         logger.exception("%s failed", label)
@@ -29,4 +31,6 @@ def build(now: datetime | None = None) -> dict:
     collect("teams", "Teams", lambda: teams.fetch(now), brief, stamp)
     collect("news", "News", news.fetch, brief, stamp)
     collect("words", "Words", lambda: words.fetch(today), brief, stamp)
+    collect("listening", "Listening", lambda: listening.fetch(today), brief, stamp)
+    collect("ski", "Ski", lambda: ski.fetch(now), brief, stamp)
     return brief

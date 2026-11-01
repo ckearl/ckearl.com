@@ -189,7 +189,6 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                   <th scope="col">Base</th>
                   <th scope="col">24h</th>
                   <th scope="col">48h</th>
-                  <th scope="col">Lifts</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,7 +198,6 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                     <td>{resort.base}</td>
                     <td>{resort.new24h}</td>
                     <td>{resort.new48h}</td>
-                    <td>{resort.lifts}</td>
                   </tr>
                 ))}
               </tbody>
@@ -218,10 +216,14 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
               <a href={listening.soundtrack.url} className="gel-button">Open in Spotify</a>
             </div>
             <h3>Yesterday</h3>
-            <p>
-              {listening.yesterday.minutes} minutes. Top artist was {listening.yesterday.topArtist}, and your top song was
-              &ldquo;{listening.yesterday.topSong}.&rdquo;
-            </p>
+            {listening.yesterday.minutes > 0 ? (
+              <p>
+                {listening.yesterday.minutes} minutes. Top artist was {listening.yesterday.topArtist}, and your top song was
+                &ldquo;{listening.yesterday.topSong}.&rdquo;
+              </p>
+            ) : (
+              <p>No listening yesterday.</p>
+            )}
           </Window>
         )}
 

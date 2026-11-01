@@ -6,49 +6,90 @@ import handlers
 HASH = hashlib.sha256(b"secret").hexdigest()
 
 
-def request(password=None, origin="https://ckearl.com"):
+def login(password, origin="https://ckearl.com"):
+    return {"headers": {"Origin": origin}, "body": json.dumps({"password": password})}
+
+
+def request(token=None, origin="https://ckearl.com"):
     headers = {"Origin": origin}
-    if password:
-        headers["X-Brief-Password"] = password
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     return {"headers": headers}
 
 
 def setup(monkeypatch, brief):
     monkeypatch.setenv("BRIEF_PASSWORD_HASH", HASH)
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
     monkeypatch.setenv("ALLOWED_ORIGINS", "https://ckearl.com,http://localhost:53000")
     monkeypatch.setattr(handlers.store, "latest", lambda: brief)
 
 
-def test_rejects_a_missing_or_wrong_password(monkeypatch):
+def token_for(monkeypatch):
+    return json.loads(handlers.session(login("secret"), None)["body"])["token"]
+
+
+def test_login_rejects_a_wrong_or_malformed_password(monkeypatch):
+    setup(monkeypatch, {})
+    assert handlers.session(login("wrong"), None)["statusCode"] == 401
+    assert handlers.session({"headers": {}, "body": "not json"}, None)["statusCode"] == 401
+    assert handlers.session({"headers": {}, "body": "[]"}, None)["statusCode"] == 401
+    assert handlers.session({"headers": {}}, None)["statusCode"] == 401
+    assert handlers.session({"headers": {}, "body": '{"password": 5}'}, None)["statusCode"] == 401
+
+
+def test_login_fails_closed_without_a_configured_password(monkeypatch):
+    setup(monkeypatch, {})
+    monkeypatch.delenv("BRIEF_PASSWORD_HASH")
+    assert handlers.session(login("secret"), None)["statusCode"] == 401
+
+
+def test_rejects_missing_forged_and_password_credentials(monkeypatch):
     setup(monkeypatch, {"date": "2026-11-02"})
     assert handlers.today(request(), None)["statusCode"] == 401
-    response = handlers.today(request("wrong"), None)
+    assert handlers.today(request("9999999999.forged"), None)["statusCode"] == 401
+    response = handlers.today(request("secret"), None)
     assert response["statusCode"] == 401
     assert "2026-11-02" not in response["body"]
+    old_header = {"headers": {"X-Brief-Password": "secret"}}
+    assert handlers.today(old_header, None)["statusCode"] == 401
 
 
-def test_returns_the_brief_with_the_right_password(monkeypatch):
+def test_a_token_with_a_changed_expiry_is_rejected(monkeypatch):
     setup(monkeypatch, {"date": "2026-11-02"})
-    response = handlers.today(request("secret"), None)
+    expires, signed = token_for(monkeypatch).split(".")
+    assert handlers.today(request(f"{int(expires) + 1}.{signed}"), None)["statusCode"] == 401
+
+
+def test_a_token_expires_after_30_days(monkeypatch):
+    setup(monkeypatch, {})
+    event = request(handlers.auth.issue_token(now=1000))
+    assert handlers.auth.authorized(event, now=1000 + 29 * 86400)
+    assert not handlers.auth.authorized(event, now=1000 + 30 * 86400)
+
+
+def test_returns_the_brief_with_a_valid_token(monkeypatch):
+    setup(monkeypatch, {"date": "2026-11-02"})
+    response = handlers.today(request(token_for(monkeypatch)), None)
     assert response["statusCode"] == 200
     assert json.loads(response["body"])["date"] == "2026-11-02"
     assert response["headers"]["Cache-Control"] == "no-store"
 
 
-def test_fails_closed_without_a_configured_password(monkeypatch):
+def test_fails_closed_without_a_signing_secret(monkeypatch):
     setup(monkeypatch, {"date": "2026-11-02"})
-    monkeypatch.delenv("BRIEF_PASSWORD_HASH")
-    assert handlers.today(request("secret"), None)["statusCode"] == 401
+    token = token_for(monkeypatch)
+    monkeypatch.delenv("BRIEF_TOKEN_SECRET")
+    assert handlers.today(request(token), None)["statusCode"] == 401
 
 
 def test_cors_only_echoes_allowed_origins(monkeypatch):
     setup(monkeypatch, {"date": "2026-11-02"})
-    allowed = handlers.today(request("secret", "http://localhost:53000"), None)
+    allowed = handlers.session(login("secret", "http://localhost:53000"), None)
     assert allowed["headers"]["Access-Control-Allow-Origin"] == "http://localhost:53000"
-    blocked = handlers.today(request("secret", "https://evil.test"), None)
+    blocked = handlers.session(login("secret", "https://evil.test"), None)
     assert blocked["headers"]["Access-Control-Allow-Origin"] == "https://ckearl.com"
 
 
 def test_empty_store_returns_404(monkeypatch):
     setup(monkeypatch, None)
-    assert handlers.today(request("secret"), None)["statusCode"] == 404
+    assert handlers.today(request(token_for(monkeypatch)), None)["statusCode"] == 404

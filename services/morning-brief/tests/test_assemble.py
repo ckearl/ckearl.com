@@ -14,12 +14,16 @@ def test_one_failed_source_does_not_stop_the_others(monkeypatch):
     monkeypatch.setattr(assemble.teams, "fetch", lambda _now: [])
     monkeypatch.setattr(assemble.news, "fetch", lambda: [])
     monkeypatch.setattr(assemble.words, "fetch", lambda _today: {})
+    monkeypatch.setattr(assemble.listening, "fetch", lambda _today: {})
+    monkeypatch.setattr(assemble.ski, "fetch", lambda _now: None)
 
     brief = assemble.build(NOW)
 
+    assert "ski" not in brief
     assert "weather" not in brief
     assert brief["scores"] == [{"league": "nba"}]
     states = {source["name"]: source["state"] for source in brief["sources"]}
     assert states["Weather"] == "failed"
     assert states["Scores"] == "ok"
+    assert states["Ski"] == "ok"
     assert brief["date"] == "2026-11-02"

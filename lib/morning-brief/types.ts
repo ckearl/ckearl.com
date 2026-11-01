@@ -65,7 +65,7 @@ export type Brief = {
   ski?: {
     summary: string;
     take: string;
-    resorts: { name: string; base: string; new24h: string; new48h: string; lifts: string }[];
+    resorts: { name: string; base: string; new24h: string; new48h: string }[];
   };
   news?: { label: string; stories: StoryItem[] }[];
   roundup?: { label: string; text: string }[];

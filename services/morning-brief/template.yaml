@@ -7,6 +7,13 @@ Parameters:
     Type: String
     NoEcho: true
     Description: SHA-256 hex of the page password (from .env via scripts/deploy.sh)
+  BriefTokenSecret:
+    Type: String
+    NoEcho: true
+    Description: Signs login tokens (from .env via scripts/deploy.sh)
+  SpotifyBucket:
+    Type: String
+    Description: spotify_stats bucket holding the listening snapshot (from .env via scripts/deploy.sh)
   AllowedOrigins:
     Type: String
     Default: https://ckearl.com,http://localhost:53000,http://100.73.47.33:53000
@@ -43,8 +50,17 @@ Resources:
       FunctionName: morning-brief-generate
       Handler: handlers.generate
       Timeout: 180
+      MemorySize: 512
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          SPOTIFY_BUCKET: !Ref SpotifyBucket
       Policies:
         - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
+        - Statement:
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SpotifyBucket}/data/snapshot.json
       Events:
         Morning:
           Type: Schedule
@@ -61,7 +77,7 @@ Resources:
       Environment:
         Variables:
           BRIEF_TABLE: !Ref BriefTable
-          BRIEF_PASSWORD_HASH: !Ref BriefPasswordHash
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
           ALLOWED_ORIGINS: !Ref AllowedOrigins
       Policies:
         - DynamoDBReadPolicy: { TableName: !Ref BriefTable }
@@ -73,6 +89,25 @@ Resources:
             Path: /brief/today
             Method: GET
 
+  SessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-session
+      Handler: handlers.session
+      Timeout: 10
+      Environment:
+        Variables:
+          BRIEF_PASSWORD_HASH: !Ref BriefPasswordHash
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+      Events:
+        Session:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/session
+            Method: POST
+
   BriefApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -81,8 +116,8 @@ Resources:
       EndpointConfiguration:
         Type: REGIONAL
       Cors:
-        AllowMethods: "'GET,OPTIONS'"
-        AllowHeaders: "'X-Brief-Password'"
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Authorization,Content-Type'"
         # The Lambda checks the real origin on each response.
         AllowOrigin: "'*'"
       MethodSettings:
