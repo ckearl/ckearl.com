@@ -12,5 +12,10 @@ that token to `GET /brief/today`. Changing `BRIEF_TOKEN_SECRET` signs everyone o
 Listening comes from the `spotify_stats` snapshot in S3. The ski report only appears in season
 when 8 or more inches is forecast for the Cottonwoods in the next three days.
 
+Calendar reads every calendar checked in Google Calendar with read-only access, skipping
+holidays and birthdays. To connect it, create a Desktop OAuth client in a Google Cloud project
+whose consent screen is In production (test-mode tokens expire after 7 days), then run
+`python3 scripts/connect_google.py <downloaded client_secret file>`.
+
 `src/data/korean_words.json` comes from `hanja-chain-data`, adapted from 국립국어원's
 dictionaries under CC BY-SA 2.0 KR.

@@ -26,6 +26,22 @@ def test_parses_a_real_espn_scoreboard():
     assert games[0]["home"]["abbr"].islower()
 
 
+def test_links_each_game_to_its_espn_gamecast():
+    gamecast = "https://www.espn.com/nba/game/_/gameId/1/lakers-celtics"
+    links = [
+        {"rel": ["boxscore", "desktop", "event"], "href": "https://www.espn.com/nba/boxscore/_/gameId/1"},
+        {"rel": ["summary", "desktop", "event"], "href": gamecast},
+    ]
+    games = scores.parse_games({"events": [{**event("LAL", "BOS"), "links": links}]}, "nba", None)
+    assert games[0]["url"] == gamecast
+
+
+def test_game_without_a_trusted_link_has_no_url():
+    links = [{"rel": ["summary"], "href": "javascript:alert(1)"}]
+    assert scores.parse_games({"events": [{**event("LAL", "BOS"), "links": links}]}, "nba", None)[0]["url"] is None
+    assert scores.parse_games({"events": [event("LAL", "BOS")]}, "nba", None)[0]["url"] is None
+
+
 def test_skips_games_not_finished():
     assert scores.parse_games({"events": [event("LAL", "BOS", completed=False)]}, "nba", None) == []
 

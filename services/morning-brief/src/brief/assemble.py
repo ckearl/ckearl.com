@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from brief import config, listening, news, scores, ski, teams, weather, words
+from brief import calendars, config, listening, news, scores, ski, teams, weather, words
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ def build(now: datetime | None = None) -> dict:
     today = now.date()
     stamp = f"{now.hour % 12 or 12}:{now.minute:02d} {'AM' if now.hour < 12 else 'PM'}"
     brief: dict = {"date": today.isoformat(), "generatedAt": now.isoformat(), "scores": [], "sources": []}
+    collect("schedule", "Calendar", lambda: calendars.fetch(today), brief, stamp)
     collect("weather", "Weather", lambda: weather.fetch(today), brief, stamp)
     collect("scores", "Scores", lambda: scores.fetch(today), brief, stamp)
     collect("teams", "Teams", lambda: teams.fetch(now), brief, stamp)

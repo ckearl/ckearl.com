@@ -44,6 +44,11 @@ def test_reports_a_draw():
     assert teams.last_result(team(), schedule, NOW) == "Drew 1–1 with Lakers."
 
 
+def test_uses_the_latest_game_when_the_schedule_is_newest_first():
+    schedule = {"events": [game("2026-11-01T02:00Z", "2", "1"), game("2026-08-22T16:30Z", "0", "4")]}
+    assert teams.last_result(team(), schedule, NOW) == "Beat Lakers 2–1."
+
+
 def test_ignores_old_results():
     assert teams.last_result(team(), {"events": [game("2026-10-01T02:00Z", "2", "1")]}, NOW) is None
 

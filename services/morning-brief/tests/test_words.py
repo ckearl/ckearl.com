@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from brief import words
 
@@ -16,6 +17,16 @@ def test_parses_a_real_wiktionary_item():
 
 def test_falls_back_to_the_newest_item():
     assert words.parse_english(FEED, date(2027, 1, 1))["word"] == "walking corpse syndrome"
+
+
+def test_skips_a_definition_that_is_only_a_label():
+    body = (
+        '<span id="WOTD-rss-title">synecdoche</span></b> <i>n</i>'
+        '<div id="WOTD-rss-description"><ol><li><span>(</span><a href="/wiki/rhetoric">rhetoric</a><span>)</span>\n'
+        "<ol><li><span>(uncountable)</span> The use of a single part of a concept.</li></ol></li></ol></div>"
+    )
+    xml = f"<rss><channel><item><title>Word</title><description>{escape(body)}</description></item></channel></rss>"
+    assert words.parse_english(xml, date(2026, 11, 1))["definition"] == "(uncountable) The use of a single part of a concept."
 
 
 def test_korean_word_has_every_field():

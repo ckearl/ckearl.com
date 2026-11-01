@@ -10,6 +10,7 @@ def test_one_failed_source_does_not_stop_the_others(monkeypatch):
         raise TimeoutError
 
     monkeypatch.setattr(assemble.weather, "fetch", broken)
+    monkeypatch.setattr(assemble.calendars, "fetch", lambda _today: [])
     monkeypatch.setattr(assemble.scores, "fetch", lambda _today: [{"league": "nba"}])
     monkeypatch.setattr(assemble.teams, "fetch", lambda _now: [])
     monkeypatch.setattr(assemble.news, "fetch", lambda: [])

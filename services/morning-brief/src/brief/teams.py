@@ -30,7 +30,8 @@ def last_result(team: dict, schedule: dict, now: datetime) -> str | None:
     ]
     if not played:
         return None
-    event = played[-1]
+    # ESPN sorts soccer schedules newest first and other leagues oldest first.
+    event = max(played, key=lambda game: datetime.fromisoformat(game["date"].replace("Z", "+00:00")))
     when = datetime.fromisoformat(event["date"].replace("Z", "+00:00"))
     if now - when > RECENT_RESULT:
         return None

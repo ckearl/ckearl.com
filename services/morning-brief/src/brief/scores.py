@@ -6,11 +6,20 @@ from brief import config
 from brief.http import get_json
 
 BASE_URL = "https://site.api.espn.com/apis/site/v2/sports"
+ESPN_SITE = "https://www.espn.com/"
 
 
 def abbreviation(league: str, team: dict) -> str:
     abbr = team["abbreviation"].lower()
     return config.ABBREVIATION_ALIASES.get((league, abbr), abbr)
+
+
+def gamecast_url(event: dict) -> str | None:
+    for link in event.get("links", []):
+        href = link.get("href", "")
+        if "summary" in link.get("rel", []) and href.startswith(ESPN_SITE):
+            return href
+    return None
 
 
 def parse_games(payload: dict, league: str, followed: set[str] | None) -> list[dict]:
@@ -29,7 +38,14 @@ def parse_games(payload: dict, league: str, followed: set[str] | None) -> list[d
         }
         if followed is not None and not followed & {sides["home"]["abbr"], sides["away"]["abbr"]}:
             continue
-        games.append({"home": sides["home"], "away": sides["away"], "status": event["status"]["type"]["shortDetail"]})
+        games.append(
+            {
+                "home": sides["home"],
+                "away": sides["away"],
+                "status": event["status"]["type"]["shortDetail"],
+                "url": gamecast_url(event),
+            }
+        )
     return games
 
 

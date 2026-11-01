@@ -7,14 +7,14 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ckearl.com)"}
 TIMEOUT = 12
 
 
-def get(url: str, params: dict | None = None) -> requests.Response:
-    response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
+def get(url: str, params: dict | None = None, headers: dict | None = None) -> requests.Response:
+    response = requests.get(url, params=params, headers=headers or HEADERS, timeout=TIMEOUT)
     response.raise_for_status()
     return response
 
 
-def get_json(url: str, params: dict | None = None) -> dict:
-    return get(url, params).json()
+def get_json(url: str, params: dict | None = None, headers: dict | None = None) -> dict:
+    return get(url, params, headers).json()
 
 
 def get_text(url: str) -> str:

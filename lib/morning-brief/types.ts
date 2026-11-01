@@ -9,6 +9,7 @@ export type Score = {
   home: { abbr: string; name: string; score: number };
   away: { abbr: string; name: string; score: number };
   status: string;
+  url?: string | null; // ESPN Gamecast
 };
 
 export type TravelMode = "walk" | "bike" | "drive";
@@ -18,6 +19,7 @@ export type ScheduleItem = {
   end: string;
   title: string;
   calendar: "personal" | "work";
+  allDay?: boolean;
   place?: string;
   travel?: { minutes: Record<TravelMode, number>; mode: TravelMode };
 };

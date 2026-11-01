@@ -12,4 +12,7 @@ sam deploy --parameter-overrides \
   "BriefPasswordHash=$BRIEF_PASSWORD_HASH" \
   "BriefTokenSecret=$BRIEF_TOKEN_SECRET" \
   "SpotifyBucket=$SPOTIFY_BUCKET" \
+  "GoogleClientId=$GOOGLE_CLIENT_ID" \
+  "GoogleClientSecret=$GOOGLE_CLIENT_SECRET" \
+  "GoogleRefreshToken=$GOOGLE_REFRESH_TOKEN" \
   "$@"

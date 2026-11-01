@@ -28,7 +28,9 @@ def parse_english(xml: str, today: date) -> dict:
     word = re.search(r'id="WOTD-rss-title">(.*?)</span>', body, re.S)
     part = re.search(r"WOTD-rss-title.*?</b>\s*<i>(.*?)</i>", body, re.S)
     section = body[body.find('id="WOTD-rss-description"') :]
-    definition = re.search(r"<li>(.*?)(?:</li>|<ol|<dl|<ul)", section, re.S)
+    senses = (strip_tags(sense) for sense in re.findall(r"<li>(.*?)(?:</li>|<ol|<dl|<ul)", section, re.S))
+    # A sense can be only a label like "(rhetoric)", with the real text in a nested list.
+    definition = next((sense for sense in senses if sense and not re.fullmatch(r"\(.*\)", sense)), None)
     if not word or not definition:
         raise ValueError("Unexpected Wiktionary format")
 
@@ -36,7 +38,7 @@ def parse_english(xml: str, today: date) -> dict:
     return {
         "word": strip_tags(word.group(1)),
         "partOfSpeech": PARTS_OF_SPEECH.get(label, label),
-        "definition": strip_tags(definition.group(1)),
+        "definition": definition,
     }
 
 

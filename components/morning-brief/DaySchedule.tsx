@@ -31,8 +31,14 @@ function Row({ item }: { item: ScheduleItem }) {
   return (
     <li className={`schedule-item is-${item.calendar}`}>
       <p className="schedule-time">
-        {formatTime(toMinutes(item.start))}
-        <span>{formatTime(toMinutes(item.end))}</span>
+        {item.allDay ? (
+          "All day"
+        ) : (
+          <>
+            {formatTime(toMinutes(item.start))}
+            <span>{formatTime(toMinutes(item.end))}</span>
+          </>
+        )}
       </p>
       <div>
         <p className="schedule-title">
@@ -65,10 +71,11 @@ function Row({ item }: { item: ScheduleItem }) {
 }
 
 export default function DaySchedule({ items }: { items: ScheduleItem[] }) {
+  if (items.length === 0) return <p>Nothing on the calendar today.</p>;
   return (
     <ol className="schedule">
       {items.map((item) => (
-        <Row key={item.start} item={item} />
+        <Row key={`${item.start}-${item.title}`} item={item} />
       ))}
     </ol>
   );

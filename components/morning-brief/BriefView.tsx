@@ -1,7 +1,7 @@
+import BriefWindow from "@/components/morning-brief/BriefWindow";
 import DaySchedule from "@/components/morning-brief/DaySchedule";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
-import Window from "@/components/new-design/Window";
 import type { Brief } from "@/lib/morning-brief/types";
 
 const stateLabels = { ok: "OK", stale: "Old", failed: "Failed" };
@@ -29,13 +29,13 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
 
       <main className="brief">
         {brief.schedule && (
-          <Window title="Today" className="brief-window">
+          <BriefWindow title="Today">
             <DaySchedule items={brief.schedule} />
-          </Window>
+          </BriefWindow>
         )}
 
         {weather && (
-          <Window title="Weather" className="brief-window">
+          <BriefWindow title="Weather">
             <div className="weather-now">
               <p className="weather-temp">{weather.now}</p>
               <div>
@@ -54,11 +54,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </li>
               ))}
             </ul>
-          </Window>
+          </BriefWindow>
         )}
 
         {brief.gamePlan && (
-          <Window title="Game Plan" className="brief-window">
+          <BriefWindow title="Game Plan">
             <ul className="plan-list">
               {brief.gamePlan.map((item) => (
                 <li key={item.task}>
@@ -67,11 +67,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </li>
               ))}
             </ul>
-          </Window>
+          </BriefWindow>
         )}
 
         {training && (
-          <Window title="Training" className="brief-window">
+          <BriefWindow title="Training">
             <p className="muted">Focus: {training.focus}</p>
             <ul className="plan-list">
               {training.today.map((item) => (
@@ -103,11 +103,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 <button type="button" className="gel-button" disabled>Save (not connected yet)</button>
               </form>
             </details>
-          </Window>
+          </BriefWindow>
         )}
 
         {brief.people && (
-          <Window title="Coming Up" className="brief-window">
+          <BriefWindow title="Coming Up">
             <ul className="people-list">
               {brief.people.map((person) => (
                 <li key={person.name}>
@@ -129,11 +129,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </ul>
               </>
             )}
-          </Window>
+          </BriefWindow>
         )}
 
         {brief.roundup && (
-          <Window title="Also Worth Knowing" className="brief-window">
+          <BriefWindow title="Also Worth Knowing">
             <dl className="roundup">
               {brief.roundup.map((item) => (
                 <div key={item.label}>
@@ -142,11 +142,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </div>
               ))}
             </dl>
-          </Window>
+          </BriefWindow>
         )}
 
         {brief.news && (
-          <Window title="News" className="brief-window">
+          <BriefWindow title="News">
             {brief.news.map((group) => (
               <div key={group.label} className="news-group">
                 <h3>{group.label}</h3>
@@ -159,11 +159,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </ul>
               </div>
             ))}
-          </Window>
+          </BriefWindow>
         )}
 
         {brief.teams && (
-          <Window title="My Teams" className="brief-window">
+          <BriefWindow title="My Teams">
             <ul className="team-list">
               {brief.teams.map(({ team, update, next }) => (
                 <li key={team.name}>
@@ -176,11 +176,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 </li>
               ))}
             </ul>
-          </Window>
+          </BriefWindow>
         )}
 
         {ski && (
-          <Window title="Ski Report" className="brief-window">
+          <BriefWindow title="Ski Report">
             <p>{ski.summary}</p>
             <table className="ski-table">
               <thead>
@@ -203,11 +203,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
               </tbody>
             </table>
             <p className="lead-line">{ski.take}</p>
-          </Window>
+          </BriefWindow>
         )}
 
         {listening && (
-          <Window title="Today's Soundtrack" className="brief-window">
+          <BriefWindow title="Today's Soundtrack">
             <p className="muted">{listening.soundtrack.kind}</p>
             <p className="soundtrack-title">{listening.soundtrack.title}</p>
             <p><strong>{listening.soundtrack.artist}</strong></p>
@@ -224,11 +224,11 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
             ) : (
               <p>No listening yesterday.</p>
             )}
-          </Window>
+          </BriefWindow>
         )}
 
         {words && (
-          <Window title="Words of the Day" className="brief-window">
+          <BriefWindow title="Words of the Day">
             <div className="word-pair">
               <div>
                 <p className="word">{words.english.word}</p>
@@ -243,10 +243,10 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                 <p className="muted" lang="en">{words.korean.chain}</p>
               </div>
             </div>
-          </Window>
+          </BriefWindow>
         )}
 
-        <Window title="Brief Status" className="brief-window">
+        <BriefWindow title="Brief Status">
           <ul className="status-list">
             {brief.sources.map((source) => (
               <li key={source.name}>
@@ -256,7 +256,7 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
               </li>
             ))}
           </ul>
-        </Window>
+        </BriefWindow>
       </main>
     </>
   );
