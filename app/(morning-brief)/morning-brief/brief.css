@@ -1,0 +1,526 @@
+/* Retro chrome on the outside, plain high-contrast reading inside. */
+
+.brief-mark {
+  padding: 0.1rem 0.6rem;
+}
+
+.brief-title {
+  margin-left: 0.5rem;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.menu-bar .brief-date {
+  display: block;
+  font-family: var(--font-body), sans-serif;
+  font-size: 14px;
+}
+
+.sample-note {
+  padding: 0.25rem 1rem;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--paper);
+  background: var(--slate-mid);
+}
+
+/* Scores strip */
+
+.scores {
+  background: var(--slate);
+  border-bottom: 1px solid var(--slate-deep);
+}
+
+.scores-track {
+  display: flex;
+  overflow-x: auto;
+  cursor: grab;
+  scrollbar-width: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.scores-track::-webkit-scrollbar {
+  display: none;
+}
+
+.scores-track.is-dragging {
+  cursor: grabbing;
+}
+
+.scores-copy {
+  display: flex;
+  flex: none;
+  gap: 0.4rem;
+  padding: 0.5rem 0.2rem;
+}
+
+.score-label {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  justify-content: center;
+  width: 7.5rem;
+  padding: 0 0.6rem;
+  color: var(--paper);
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.score-label strong {
+  font-family: var(--font-stack-chrome);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.score-card {
+  flex: none;
+  width: 12.5rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--slate-deep);
+  box-shadow: inset 1px 1px #fff;
+}
+
+.score-side {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: center;
+  color: var(--slate-mid);
+}
+
+.score-side.is-winner {
+  font-weight: 700;
+  color: var(--slate-deep);
+}
+
+.score-side img {
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.score-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.score-value {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-status {
+  font-size: 13px;
+  text-align: right;
+  color: var(--slate-mid);
+}
+
+/* Windows */
+
+.brief {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+  columns: 1;
+  column-gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .brief {
+    columns: 2;
+  }
+}
+
+.brief-window {
+  margin-bottom: 1.25rem;
+  break-inside: avoid;
+}
+
+.brief-window .window-body {
+  margin: 3px;
+  padding: 0.8rem 0.9rem;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--slate-deep);
+  background: var(--paper);
+  border: 1px solid var(--slate);
+}
+
+.brief-window h3 {
+  margin-top: 0.9rem;
+  font-weight: 700;
+}
+
+.brief-window a:not(.gel-button) {
+  color: #16507f;
+  text-decoration: underline;
+}
+
+.muted {
+  color: var(--slate-mid);
+}
+
+.lead-line {
+  margin-top: 0.4rem;
+  font-weight: 700;
+}
+
+/* Weather */
+
+.weather-now {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.weather-temp {
+  font-family: var(--font-stack-chrome);
+  font-size: 3.25rem;
+  line-height: 1;
+}
+
+.weather-conditions {
+  font-weight: 700;
+}
+
+.windows-list li {
+  display: grid;
+  padding: 0.35rem 0.5rem;
+  border-left: 3px solid var(--tan);
+}
+
+.windows-list li + li {
+  margin-top: 0.25rem;
+}
+
+.windows-list .is-best {
+  background: color-mix(in srgb, var(--sage-pale) 45%, transparent);
+  border-left-color: var(--aqua);
+}
+
+/* Schedule */
+
+.schedule-item {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.schedule-item + .schedule-item {
+  border-top: 1px solid var(--tan);
+}
+
+.schedule-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-time span {
+  display: block;
+  font-weight: 400;
+  color: var(--slate-mid);
+}
+
+.schedule-title {
+  font-weight: 700;
+}
+
+.schedule-title span {
+  font-weight: 400;
+}
+
+.is-work .schedule-title {
+  font-weight: 400;
+  color: var(--slate-mid);
+}
+
+.mode-picker {
+  display: flex;
+  margin-top: 0.3rem;
+}
+
+.mode-picker button {
+  flex: 1;
+  padding: 0.2rem 0.3rem;
+  font-size: 14px;
+  line-height: 1.3;
+  background: var(--tan-light);
+  border: 1px solid var(--slate);
+  cursor: pointer;
+}
+
+.mode-picker button span {
+  display: block;
+  font-weight: 700;
+}
+
+.mode-picker button + button {
+  border-left: 0;
+}
+
+.mode-picker button[aria-pressed="true"] {
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--slate);
+}
+
+/* Lists */
+
+.plan-list li {
+  padding: 0.4rem 0;
+}
+
+.plan-list li + li {
+  border-top: 1px solid var(--tan);
+}
+
+.week-meters {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.week-meters div {
+  display: grid;
+  grid-template-columns: 6.5rem 4rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.week-meters dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.week-meters .bar {
+  margin-top: 0;
+}
+
+.goal-form {
+  margin-top: 0.9rem;
+}
+
+.goal-form summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.goal-form form {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.goal-form label {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 15px;
+}
+
+.goal-form input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  font-size: 16px;
+  background: #fff;
+  border: 1px solid var(--slate);
+}
+
+.goal-form button {
+  justify-self: start;
+  opacity: 0.7;
+}
+
+/* Teams */
+
+.team-list li {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+}
+
+.team-list li + li {
+  border-top: 1px solid var(--tan);
+}
+
+.monogram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 2.25rem;
+  font-family: var(--font-stack-chrome);
+  font-size: 18px;
+  border: 1px solid var(--slate-deep);
+  box-shadow: inset 1px 1px color-mix(in srgb, #fff 30%, transparent);
+}
+
+/* Soundtrack and words */
+
+.soundtrack-title {
+  font-family: var(--font-stack-chrome);
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.word-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.word-pair > div + div {
+  padding-left: 1rem;
+  border-left: 1px solid var(--tan);
+}
+
+.word {
+  font-family: var(--font-stack-chrome);
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.word-korean {
+  font-family: var(--font-korean), sans-serif;
+  font-weight: 700;
+}
+
+.people-list li,
+.week-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+}
+
+.week-list li {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+}
+
+/* Ski, news and status */
+
+.ski-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.ski-table th,
+.ski-table td {
+  padding: 0.25rem 0.3rem;
+  text-align: right;
+  border-bottom: 1px solid var(--tan);
+}
+
+.ski-table th:first-child {
+  text-align: left;
+}
+
+.ski-table thead th {
+  border-bottom: 2px solid var(--slate);
+}
+
+.news-group:first-child h3 {
+  margin-top: 0;
+}
+
+.news-group li {
+  padding: 0.3rem 0;
+}
+
+.news-group li + li {
+  border-top: 1px solid var(--tan);
+}
+
+.roundup div {
+  padding: 0.3rem 0;
+}
+
+.roundup div + div {
+  border-top: 1px solid var(--tan);
+}
+
+.roundup dt {
+  font-weight: 700;
+}
+
+.status-list li {
+  display: grid;
+  grid-template-columns: 3.75rem 5.75rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.25rem 0;
+  font-size: 15px;
+}
+
+.status-dot {
+  padding: 0 0.25rem;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--slate);
+}
+
+.status-dot.is-ok {
+  background: var(--sage-pale);
+}
+
+.status-dot.is-stale {
+  background: var(--tan);
+}
+
+.status-dot.is-failed {
+  color: var(--paper);
+  background: var(--slate);
+}
+
+/* Password screen */
+
+.gate {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 1rem;
+}
+
+.gate .brief-window {
+  width: min(100%, 24rem);
+  margin: 0;
+}
+
+.gate form {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.gate label {
+  display: grid;
+  gap: 0.2rem;
+  font-weight: 700;
+}
+
+.gate input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-size: 16px;
+  font-weight: 400;
+  background: #fff;
+  border: 1px solid var(--slate);
+}
+
+.gate button {
+  justify-self: start;
+  cursor: pointer;
+}
+
+.gate-error {
+  font-weight: 700;
+  color: #8a1f1f;
+}

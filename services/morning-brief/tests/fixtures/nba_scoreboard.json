@@ -1,0 +1,64 @@
+{
+"events": [
+{
+"status": {
+"type": {
+"completed": true,
+"shortDetail": "Final"
+}
+},
+"competitions": [
+{
+"competitors": [
+{
+"homeAway": "home",
+"score": "123",
+"team": {
+"abbreviation": "UTAH",
+"shortDisplayName": "Jazz"
+}
+},
+{
+"homeAway": "away",
+"score": "132",
+"team": {
+"abbreviation": "LAL",
+"shortDisplayName": "Lakers"
+}
+}
+]
+}
+]
+},
+{
+"status": {
+"type": {
+"completed": true,
+"shortDetail": "Final"
+}
+},
+"competitions": [
+{
+"competitors": [
+{
+"homeAway": "home",
+"score": "109",
+"team": {
+"abbreviation": "BKN",
+"shortDisplayName": "Nets"
+}
+},
+{
+"homeAway": "away",
+"score": "136",
+"team": {
+"abbreviation": "IND",
+"shortDisplayName": "Pacers"
+}
+}
+]
+}
+]
+}
+]
+}

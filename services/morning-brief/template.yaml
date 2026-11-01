@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Morning Brief for ckearl.com/morning-brief
+
+Parameters:
+  BriefPasswordHash:
+    Type: String
+    NoEcho: true
+    Description: SHA-256 hex of the page password (from .env via scripts/deploy.sh)
+  AllowedOrigins:
+    Type: String
+    Default: https://ckearl.com,http://localhost:53000,http://100.73.47.33:53000
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    CodeUri: src/
+    MemorySize: 256
+    Environment:
+      Variables:
+        BRIEF_TABLE: !Ref BriefTable
+
+Resources:
+  BriefTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MorningBrief
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: date, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: date, KeyType: RANGE }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  GenerateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-generate
+      Handler: handlers.generate
+      Timeout: 180
+      Policies:
+        - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
+      Events:
+        Morning:
+          Type: Schedule
+          Properties:
+            # EventBridge rules run in UTC: 5:30 AM Mountain in summer, 4:30 AM in winter.
+            Schedule: cron(30 11 * * ? *)
+
+  TodayFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-today
+      Handler: handlers.today
+      Timeout: 10
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          BRIEF_PASSWORD_HASH: !Ref BriefPasswordHash
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref BriefTable }
+      Events:
+        Today:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/today
+            Method: GET
+
+  BriefApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: MorningBriefAPI
+      StageName: prod
+      EndpointConfiguration:
+        Type: REGIONAL
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'X-Brief-Password'"
+        # The Lambda checks the real origin on each response.
+        AllowOrigin: "'*'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 2
+          ThrottlingBurstLimit: 5
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${BriefApi}.execute-api.${AWS::Region}.amazonaws.com/prod
