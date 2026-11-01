@@ -17,6 +17,7 @@ def test_one_failed_source_does_not_stop_the_others(monkeypatch):
     monkeypatch.setattr(assemble.words, "fetch", lambda _today: {})
     monkeypatch.setattr(assemble.listening, "fetch", lambda _today: {})
     monkeypatch.setattr(assemble.ski, "fetch", lambda _now: None)
+    monkeypatch.setattr(assemble.todos, "fetch", lambda: {"items": [], "receivedAt": NOW.isoformat()})
 
     brief = assemble.build(NOW)
 
@@ -27,4 +28,6 @@ def test_one_failed_source_does_not_stop_the_others(monkeypatch):
     assert states["Weather"] == "failed"
     assert states["Scores"] == "ok"
     assert states["Ski"] == "ok"
+    assert states["Reminders"] == "ok"
+    assert brief["todos"]["items"] == []
     assert brief["date"] == "2026-11-02"

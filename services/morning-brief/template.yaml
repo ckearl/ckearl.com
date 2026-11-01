@@ -23,6 +23,10 @@ Parameters:
   GoogleRefreshToken:
     Type: String
     NoEcho: true
+  TodosKeyHash:
+    Type: String
+    NoEcho: true
+    Description: SHA-256 hex of the iPhone Shortcut's key (from .env via scripts/deploy.sh)
   AllowedOrigins:
     Type: String
     Default: https://ckearl.com,http://localhost:53000,http://100.73.47.33:53000
@@ -69,6 +73,7 @@ Resources:
           GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
       Policies:
         - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
+        - DynamoDBReadPolicy: { TableName: !Ref BriefTable }
         - Statement:
             - Effect: Allow
               Action: s3:GetObject
@@ -118,6 +123,27 @@ Resources:
           Properties:
             RestApiId: !Ref BriefApi
             Path: /brief/session
+            Method: POST
+
+  TodosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-todos
+      Handler: handlers.receive_todos
+      Timeout: 10
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          TODOS_KEY_HASH: !Ref TodosKeyHash
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+      Policies:
+        - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
+      Events:
+        Todos:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/todos
             Method: POST
 
   BriefApi:

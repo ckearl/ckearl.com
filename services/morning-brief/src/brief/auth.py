@@ -10,11 +10,26 @@ import time
 TOKEN_DAYS = 30
 
 
-def password_matches(password: str) -> bool:
-    expected = os.environ.get("BRIEF_PASSWORD_HASH")
-    if not expected or not password or not isinstance(password, str):
+def hash_matches(value: str, expected: str | None) -> bool:
+    if not expected or not value or not isinstance(value, str):
         return False
-    return hmac.compare_digest(hashlib.sha256(password.encode()).hexdigest(), expected)
+    return hmac.compare_digest(hashlib.sha256(value.encode()).hexdigest(), expected)
+
+
+def password_matches(password: str) -> bool:
+    return hash_matches(password, os.environ.get("BRIEF_PASSWORD_HASH"))
+
+
+def bearer(event: dict) -> tuple[str, str]:
+    headers = {key.lower(): value for key, value in (event.get("headers") or {}).items()}
+    scheme, _, credential = (headers.get("authorization") or "").partition(" ")
+    return scheme, credential
+
+
+def todos_key_matches(event: dict) -> bool:
+    """The iPhone Shortcut's own key. It can send the list and nothing else."""
+    scheme, key = bearer(event)
+    return scheme == "Bearer" and hash_matches(key, os.environ.get("TODOS_KEY_HASH"))
 
 
 def signature(expires: str, secret: str) -> str:
@@ -28,8 +43,7 @@ def issue_token(now: float | None = None) -> str:
 
 def authorized(event: dict, now: float | None = None) -> bool:
     secret = os.environ.get("BRIEF_TOKEN_SECRET")
-    headers = {key.lower(): value for key, value in (event.get("headers") or {}).items()}
-    scheme, _, token = (headers.get("authorization") or "").partition(" ")
+    scheme, token = bearer(event)
     expires, _, signed = token.partition(".")
     if not secret or scheme != "Bearer" or not expires.isdigit():
         return False
