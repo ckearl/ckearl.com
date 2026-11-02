@@ -241,7 +241,7 @@ export const achievements = [
   },
   {
     title: "Music",
-    description: "Played guitar and piano in the indie band Ritt Momney until 2018",
+    description: "Avid guitarist and pianist. I collect vinyl records and concert stubs. Played guitar and piano in the indie band Ritt Momney way back when",
     icon: "music",
   },
 ];
