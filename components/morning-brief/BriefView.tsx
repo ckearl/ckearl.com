@@ -180,6 +180,7 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
                   {group.stories.map((story) => (
                     <li key={story.text}>
                       {story.text} <a href={story.url}>{story.source}</a>
+                      {story.why && <p className="muted">{story.why}</p>}
                     </li>
                   ))}
                 </ul>

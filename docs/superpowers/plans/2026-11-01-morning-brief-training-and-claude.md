@@ -1,6 +1,7 @@
 # Morning Brief: training plan and Claude integration
 
-Not started. This records the direction agreed on 2026-11-01. Design details are in
+Claude's game plan, top stories and sports line are built, using Haiku 5.5. Training isn't
+started. This records the direction agreed on 2026-11-01. Design details are in
 `docs/superpowers/specs/2026-10-31-morning-brief-design.md`.
 
 ## Order
@@ -16,8 +17,9 @@ Not started. This records the direction agreed on 2026-11-01. Design details are
 Claude ranks the news, explains why stories matter, writes sports and AI headlines, chooses
 the game plan, and writes the training explanation.
 
-- **Cost goal:** free or nearly free. Start with Claude Haiku 5.5, and check its output on a
-  week of real briefs before settling on it.
+- **Cost goal:** free or nearly free. Use Claude Haiku 5.5, and check its output on a week of
+  real briefs before settling on it. In a small test against Sonnet 5.5, Haiku followed the
+  rules better and Sonnet wrote better. Neither wrote a reliable week plan alone.
 - **Estimate:** at 20,000 input and 4,000 output tokens a day, using prices dated 2026-10-06:
   | Model | Per day | Per month |
   |---|---|---|
@@ -26,8 +28,6 @@ the game plan, and writes the training explanation.
   | Opus 5.5 | about $0.16 | about $4.80 |
 - **Billing:** the API is separate from a Claude subscription, so this needs an API account
   with credit. Set a low spending limit. The API key goes in `services/morning-brief/.env`.
-- **Before sending calendar data:** update `/privacy`, which currently says calendar data isn't
-  shared.
 - **Untrusted text:** calendar, Reminders and news text is data, never instructions.
 
 ## Training plan
@@ -40,7 +40,7 @@ explanation. That costs nothing, can be tested, and can't improvise.
 | Other activities (basketball, soccer) | Google Calendar |
 | Sleep and HRV | Garmin |
 | Completed workouts and their intensity | Garmin |
-| Weekly volume, easy pace, focus | Saved settings, still needed from Christopher |
+| Weekly volume, easy pace, focus | Saved settings, kept out of this public repo |
 
 ### Weekly plan, on Sunday
 Fit runs, swims and strength around the calendar's other activities, and save the result as
@@ -70,9 +70,6 @@ Compare yesterday's plan with what Garmin recorded, then check last night's slee
 - Garmin shows what happened, not why. Add a one-tap "felt rough / fine / great" on the page
   after the basics work.
 - Show an injury caution. This isn't coaching or medical advice.
-
-### Open
-- Current weekly mileage, swim volume and easy pace.
 
 ### Garmin data
 The Personal API returns sleep, HRV, workouts, training effect, intensity minutes, resting heart

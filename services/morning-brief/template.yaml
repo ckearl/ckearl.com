@@ -27,6 +27,10 @@ Parameters:
     Type: String
     NoEcho: true
     Description: SHA-256 hex of the iPhone Shortcut's key (from .env via scripts/deploy.sh)
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+    Description: Claude API key (from .env via scripts/deploy.sh)
   AllowedOrigins:
     Type: String
     Default: https://ckearl.com,http://localhost:53000,http://100.73.47.33:53000
@@ -71,6 +75,7 @@ Resources:
           GOOGLE_CLIENT_ID: !Ref GoogleClientId
           GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
           GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
       Policies:
         - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
         - DynamoDBReadPolicy: { TableName: !Ref BriefTable }

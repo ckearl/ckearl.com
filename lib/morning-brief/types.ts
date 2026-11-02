@@ -26,7 +26,7 @@ export type ScheduleItem = {
 
 export type TrainingWindow = { label: string; time: string; conditions: string; best?: boolean };
 
-export type StoryItem = { text: string; source: string; url: string };
+export type StoryItem = { text: string; source: string; url: string; why?: string };
 
 export type SourceState = "ok" | "stale" | "failed";
 
