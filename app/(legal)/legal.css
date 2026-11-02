@@ -1,12 +1,23 @@
 .legal {
   display: grid;
   place-items: center;
+  position: relative;
   min-height: 100svh;
   padding: 1.25rem 1rem;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .legal-window {
+  position: relative;
+  z-index: 1;
   width: min(100%, 38rem);
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .legal-window .window-body {

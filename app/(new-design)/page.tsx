@@ -1,6 +1,7 @@
 import Hero from "@/components/new-design/Hero";
 import MenuBar from "@/components/new-design/MenuBar";
 import ProjectBrowser from "@/components/new-design/ProjectBrowser";
+import { restoreScript } from "@/lib/desktopWindows";
 import {
   achievements,
   certifications,
@@ -20,6 +21,7 @@ export default function Home() {
   return (
     <>
       <MenuBar />
+      <script dangerouslySetInnerHTML={{ __html: restoreScript }} />
       <Hero />
       <main>
         <section id="projects" className="section">

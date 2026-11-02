@@ -2,7 +2,6 @@ const CELL = 12;
 const GRAVITY = 1400;
 const TERMINAL_VELOCITY = 900;
 const MAX_FALLING = 700;
-const PILE_SHARE = 0.4;
 
 const CHARS = Array.from({ length: 94 }, (_, index) => String.fromCharCode(33 + index));
 const COLORS = ["#2c3a45", "#2c3a45", "#1e2830", "#fbf6ea", "#1f7fcc"];
@@ -42,7 +41,7 @@ export class AsciiPile {
     this.width = width;
     this.height = height;
     this.scale = window.devicePixelRatio || 1;
-    this.maxRows = Math.floor((height * PILE_SHARE) / CELL);
+    this.maxRows = Math.floor(height / CELL);
 
     const columns = Math.ceil(width / CELL);
     this.stacks = Array.from({ length: columns }, (_, column) =>

@@ -152,6 +152,15 @@ body {
   cursor: pointer;
 }
 
+.desktop-window .window-title {
+  cursor: grab;
+  touch-action: none;
+}
+
+.desktop-window.is-dragging .window-title {
+  cursor: grabbing;
+}
+
 /* A larger tap target than the 13px box. */
 .desktop-window .window-box::after {
   content: "";
@@ -164,15 +173,20 @@ body {
   background: var(--tan-dark);
 }
 
-/* A dash in the box marks a window that's minimized. */
-.desktop-window.is-minimized .window-box {
+/* Minimized windows are listed on <html>, so they draw minimized from the first paint.
+   A dash in the box marks one. */
+:is([data-minimized~="about"] [data-window="about"], [data-minimized~="note"] [data-window="note"]) .window-box {
   background-image: linear-gradient(var(--slate-deep), var(--slate-deep));
   background-position: center;
   background-size: 7px 1px;
   background-repeat: no-repeat;
 }
 
-.desktop-window.is-minimized {
+:is([data-minimized~="about"] [data-window="about"], [data-minimized~="note"] [data-window="note"]) .window-body {
+  display: none;
+}
+
+:is([data-minimized~="about"] [data-window="about"], [data-minimized~="note"] [data-window="note"]) {
   padding-bottom: 3px;
 }
 
@@ -186,6 +200,7 @@ body {
   min-height: calc(100svh - 2.25rem);
   padding: 1.25rem 1rem 5.5rem;
   overflow: hidden;
+  isolation: isolate;
   cursor: crosshair;
   user-select: none;
   -webkit-user-select: none;
@@ -197,10 +212,11 @@ body {
   -webkit-user-drag: none;
 }
 
-.hero-canvas {
+/* Behind the windows and icons, so the pile never covers them. */
+.ascii-canvas {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 0;
   width: 100%;
   height: 100%;
   font-family: var(--font-stack-chrome);
@@ -321,7 +337,7 @@ body {
   position: absolute;
   right: 1rem;
   bottom: 0.75rem;
-  z-index: 3;
+  z-index: 1;
   width: 4.5rem;
 }
 
@@ -533,22 +549,21 @@ body {
 }
 
 .logo-text p {
-  max-width: 46ch;
   margin-top: 0.75rem;
   font-size: 1rem;
   line-height: 1.5;
 }
 
+/* Labels share a column and values wrap inside their own, so a long value never drops under its label. */
 .about-facts {
   display: grid;
-  gap: 0.1rem 1.5rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 0.6rem;
   padding: 0.75rem 0.4rem;
 }
 
 .about-facts div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.5rem;
+  display: contents;
 }
 
 .about-facts dt {
@@ -557,7 +572,12 @@ body {
 
 @media (min-width: 640px) {
   .about-facts {
-    grid-template-columns: auto 1fr;
+    grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+    column-gap: 0.6rem;
+  }
+
+  .about-facts div:nth-child(even) dt {
+    margin-left: 1rem;
   }
 }
 

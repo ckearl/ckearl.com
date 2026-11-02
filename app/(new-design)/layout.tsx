@@ -53,7 +53,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${notoSans.variable} ${pixelify.variable}`}>
+    // The homepage restores saved window states onto <html> before React hydrates.
+    <html lang="en" className={`${notoSans.variable} ${pixelify.variable}`} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );
