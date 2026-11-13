@@ -27,5 +27,11 @@ the page shows each one as "Work". To connect it, create a Desktop OAuth client 
 whose consent screen is In production (test-mode tokens expire after 7 days), then run
 `python3 scripts/connect_google.py <downloaded client_secret file>`.
 
+Training plans each week from the event saved on the page (`POST /brief/goal`, with the page's
+login token), sports on my calendars, and the last month of Garmin runs, sleep and HRV through
+Garmin's Personal API (`GARMIN_API_KEY`). Saving an event replans that day's brief right away.
+Easy pace and the fallback weekly miles are `TRAINING_EASY_PACE` and `TRAINING_BASE_MILES` in
+`.env`.
+
 `src/data/korean_words.json` comes from `hanja-chain-data`, adapted from 국립국어원's
 dictionaries under CC BY-SA 2.0 KR.

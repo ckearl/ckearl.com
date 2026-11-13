@@ -87,17 +87,39 @@ def order(items: list[dict]) -> list[dict]:
     return sorted(items, key=lambda item: (not item.get("allDay"), item["start"], item["title"]))
 
 
-def fetch(today: date) -> list[dict]:
+def events(start_day: date, days: int) -> list[dict]:
+    """Raw events from every calendar between the start of start_day and days later, each tagged with its owner."""
     headers = {**HEADERS, "Authorization": f"Bearer {access_token()}"}
-    start = datetime.combine(today, time.min, tzinfo=config.TIMEZONE)
-    end = datetime.combine(today + timedelta(days=1), time.min, tzinfo=config.TIMEZONE)
-    params = {"timeMin": start.isoformat(), "timeMax": end.isoformat(), "singleEvents": "true", "maxResults": 50}
+    start = datetime.combine(start_day, time.min, tzinfo=config.TIMEZONE)
+    end = datetime.combine(start_day + timedelta(days=days), time.min, tzinfo=config.TIMEZONE)
+    params = {"timeMin": start.isoformat(), "timeMax": end.isoformat(), "singleEvents": "true", "maxResults": 250}
     tagged = owners()
-    events = []
+    found = []
     for calendar_id in calendar_ids(get_json(f"{API_URL}/users/me/calendarList", headers=headers)):
         owner = tagged.get(calendar_id, "mine")
         if owner == "skip":
             continue
         url = f"{API_URL}/calendars/{requests.utils.quote(calendar_id, safe='')}/events"
-        events += [{**event, "owner": owner} for event in get_json(url, params, headers).get("items", [])]
-    return build(events, today)
+        found += [{**event, "owner": owner} for event in get_json(url, params, headers).get("items", [])]
+    return found
+
+
+def on_day(event: dict, day: date) -> bool:
+    if "date" in event["start"]:
+        return date.fromisoformat(event["start"]["date"]) <= day < date.fromisoformat(event["end"]["date"])
+    start = datetime.fromisoformat(event["start"]["dateTime"]).astimezone(config.TIMEZONE)
+    end = datetime.fromisoformat(event["end"]["dateTime"]).astimezone(config.TIMEZONE)
+    return start.date() <= day and (end.date() > day or (end.date() == day and end.time() > time.min))
+
+
+def week(start_day: date, days: int = 7) -> dict[date, list[dict]]:
+    """Each day's schedule items, from one request per calendar."""
+    found = events(start_day, days)
+    return {
+        day: build([event for event in found if on_day(event, day)], day)
+        for day in (start_day + timedelta(days=offset) for offset in range(days))
+    }
+
+
+def fetch(today: date) -> list[dict]:
+    return build(events(today, 1), today)

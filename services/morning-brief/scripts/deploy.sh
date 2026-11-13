@@ -17,5 +17,8 @@ sam deploy --parameter-overrides \
   "GoogleRefreshToken=$GOOGLE_REFRESH_TOKEN" \
   "TodosKeyHash=$TODOS_KEY_HASH" \
   "CalendarOwners=${CALENDAR_OWNERS:-}" \
+  "GarminApiKey=$GARMIN_API_KEY" \
+  "TrainingEasyPace=${TRAINING_EASY_PACE:-}" \
+  "TrainingBaseMiles=${TRAINING_BASE_MILES:-7.5}" \
   "AnthropicApiKey=$ANTHROPIC_API_KEY" \
   "$@"

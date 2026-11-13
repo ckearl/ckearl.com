@@ -29,6 +29,22 @@ export type ScheduleItem = {
 
 export type TrainingWindow = { label: string; time: string; conditions: string; best?: boolean };
 
+export type GoalKind = "5k" | "10k" | "half" | "marathon" | "swim";
+
+export type Goal = { name: string; kind: GoalKind; date: string }; // date is "YYYY-MM-DD"
+
+// What saving the form sends: an event to train for, or { clear: true } for general fitness.
+export type GoalRequest = Goal | { clear: true };
+
+export type Training = {
+  focus: string;
+  today: { title: string; detail: string }[];
+  why: string;
+  week: { label: string; done: number; target: number }[];
+  plan?: { day: string; date: string; items: string[]; today?: boolean }[];
+  goal?: Goal;
+};
+
 export type StoryItem = { text: string; source: string; url: string; why?: string };
 
 export type SourceState = "ok" | "stale" | "failed";
@@ -55,12 +71,7 @@ export type Brief = {
     items: { title: string; due?: string; notes?: string }[]; // due is "YYYY-MM-DD"
   };
   gamePlan?: { task: string; estimate: string; why: string }[];
-  training?: {
-    focus: string;
-    today: { title: string; detail: string }[];
-    why: string;
-    week: { label: string; done: number; target: number }[];
-  };
+  training?: Training;
   teams?: { team: Team; update: string; next: string }[];
   listening?: {
     yesterday: { minutes: number; topArtist: string; topSong: string };

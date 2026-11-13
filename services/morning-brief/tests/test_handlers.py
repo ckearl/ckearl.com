@@ -163,3 +163,41 @@ def test_work_saves_todays_events_with_the_shortcut_key(monkeypatch):
     assert handlers.receive_work(todos_request("wrong", body), None)["statusCode"] == 401
     assert handlers.receive_work(todos_request("todos-key", "nope"), None)["statusCode"] == 400
     assert len(saved) == 1
+
+
+def goal_request(monkeypatch, body):
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
+    token = handlers.auth.issue_token()
+    return {"headers": {"Authorization": f"Bearer {token}"}, "body": body}
+
+
+def test_goal_needs_a_login(monkeypatch):
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
+    monkeypatch.setenv("TODOS_KEY_HASH", TODOS_HASH)
+    body = '{"kind": "5k", "date": "2030-01-01"}'
+    assert handlers.save_goal({"headers": {}, "body": body}, None)["statusCode"] == 401
+    assert handlers.save_goal(todos_request("todos-key", body), None)["statusCode"] == 401
+
+
+def test_goal_saves_and_replans_todays_brief(monkeypatch):
+    saved, briefs = [], []
+    today = handlers.datetime.now(handlers.config.TIMEZONE).date()
+    goal_date = (today + handlers.training.timedelta(days=60)).isoformat()
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: saved.append((kind, body)))
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": today.isoformat(), "training": {"focus": "old"}})
+    monkeypatch.setattr(handlers.store, "save", briefs.append)
+    monkeypatch.setattr(handlers.training, "fetch", lambda now: {"focus": "new"})
+    response = handlers.save_goal(goal_request(monkeypatch, json.dumps({"name": "Trot", "kind": "5k", "date": goal_date})), None)
+    assert response["statusCode"] == 200
+    assert saved == [("goal", {"name": "Trot", "kind": "5k", "date": goal_date})]
+    assert briefs[0]["training"] == {"focus": "new"}
+    assert json.loads(response["body"])["training"] == {"focus": "new"}
+
+
+def test_goal_can_be_cleared_and_rejects_bad_input(monkeypatch):
+    saved = []
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: saved.append((kind, body)))
+    monkeypatch.setattr(handlers.store, "latest", lambda: None)
+    assert handlers.save_goal(goal_request(monkeypatch, '{"kind": "ultra", "date": "2030-01-01"}'), None)["statusCode"] == 400
+    assert handlers.save_goal(goal_request(monkeypatch, '{"clear": true}'), None)["statusCode"] == 200
+    assert saved == [("goal", {})]

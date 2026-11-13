@@ -31,6 +31,18 @@ Parameters:
     Type: String
     NoEcho: true
     Description: Claude API key (from .env via scripts/deploy.sh)
+  GarminApiKey:
+    Type: String
+    NoEcho: true
+    Description: Garmin Connect Personal API key (from .env via scripts/deploy.sh)
+  TrainingEasyPace:
+    Type: String
+    Default: ""
+    Description: Easy pace per mile, such as 8:30-8:45 (from .env via scripts/deploy.sh)
+  TrainingBaseMiles:
+    Type: String
+    Default: "7.5"
+    Description: Weekly miles to plan from when Garmin has no runs (from .env via scripts/deploy.sh)
   CalendarOwners:
     Type: String
     Default: ""
@@ -80,6 +92,9 @@ Resources:
           GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
           GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
           CALENDAR_OWNERS: !Ref CalendarOwners
+          GARMIN_API_KEY: !Ref GarminApiKey
+          TRAINING_EASY_PACE: !Ref TrainingEasyPace
+          TRAINING_BASE_MILES: !Ref TrainingBaseMiles
           ANTHROPIC_API_KEY: !Ref AnthropicApiKey
       Policies:
         - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
@@ -175,6 +190,35 @@ Resources:
           Properties:
             RestApiId: !Ref BriefApi
             Path: /brief/work
+            Method: POST
+
+  GoalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-goal
+      Handler: handlers.save_goal
+      # API Gateway stops waiting at 29 seconds.
+      Timeout: 28
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
+          CALENDAR_OWNERS: !Ref CalendarOwners
+          GARMIN_API_KEY: !Ref GarminApiKey
+          TRAINING_EASY_PACE: !Ref TrainingEasyPace
+          TRAINING_BASE_MILES: !Ref TrainingBaseMiles
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
+      Events:
+        Goal:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/goal
             Method: POST
 
   BriefApi:

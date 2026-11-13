@@ -103,3 +103,19 @@ def test_fetch_reads_every_calendar_tags_owners_and_skips_skipped(monkeypatch):
     _, params = requested[1]
     assert params["timeMin"] == "2026-11-03T00:00:00-07:00"
     assert params["timeMax"] == "2026-11-04T00:00:00-07:00"
+
+
+def test_week_groups_events_by_day_including_multi_day_ones(monkeypatch):
+    found = [
+        timed("Basketball", "2026-11-03T19:00:00-07:00", "2026-11-03T21:00:00-07:00", owner="mine"),
+        timed("Late game", "2026-11-04T22:00:00-07:00", "2026-11-05T00:00:00-07:00", owner="mine"),
+        {"summary": "Trip", "start": {"date": "2026-11-05"}, "end": {"date": "2026-11-07"}, "owner": "mine"},
+    ]
+    monkeypatch.setattr(calendars, "events", lambda start, days: found)
+    days = calendars.week(TODAY, 4)
+    assert [[item["title"] for item in days[day]] for day in sorted(days)] == [
+        ["Basketball"],
+        ["Late game"],
+        ["Trip"],
+        ["Trip"],
+    ]

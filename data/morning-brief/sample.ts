@@ -164,7 +164,15 @@ export const sampleBrief: Brief = {
       { label: "Runs", done: 0, target: 3 },
       { label: "Swims", done: 0, target: 1 },
       { label: "Strength", done: 0, target: 2 },
-      { label: "Calisthenics", done: 0, target: 7 },
+    ],
+    plan: [
+      { day: "Mon", date: "2026-11-02", items: ["Easy 3 mi", "Strength"], today: true },
+      { day: "Tue", date: "2026-11-03", items: ["Basketball"] },
+      { day: "Wed", date: "2026-11-04", items: ["Swim"] },
+      { day: "Thu", date: "2026-11-05", items: ["Tempo 3 mi"] },
+      { day: "Fri", date: "2026-11-06", items: ["Strength"] },
+      { day: "Sat", date: "2026-11-07", items: ["Long 5 mi"] },
+      { day: "Sun", date: "2026-11-08", items: ["Calisthenics only"] },
     ],
   },
   teams: [

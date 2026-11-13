@@ -1,7 +1,10 @@
 # Morning Brief: training plan and Claude integration
 
-Claude's game plan, top stories and sports line are built, using Haiku 5.5. Training isn't
-started. This records the direction agreed on 2026-11-01. Design details are in
+Claude's game plan, top stories and sports line are built, using Haiku 5.5. The training plan
+was built on 2026-11-12 in `services/morning-brief/src/brief/training.py`: the page saves an
+event (5K, 10K, half, marathon or swim) and rules plan each week around it, the calendar's
+sports and Garmin. Sunday stays free. Claude doesn't write the explanation yet, and the
+"felt rough / fine / great" tap isn't built. This records the direction agreed on 2026-11-01. Design details are in
 `docs/superpowers/specs/2026-10-31-morning-brief-design.md`.
 
 ## Order

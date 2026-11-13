@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from brief import calendars, claude, config, listening, news, scores, ski, teams, todos, weather, words, work
+from brief import calendars, claude, config, listening, news, scores, ski, teams, todos, training, weather, words, work
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ def build(now: datetime | None = None) -> dict:
     work.merge(brief, now)
     collect("todos", "Reminders", todos.fetch, brief, stamp)
     todos.flag_stale(brief, now)
+    collect("training", "Training", lambda: training.fetch(now), brief, stamp)
     collect("weather", "Weather", lambda: weather.fetch(today), brief, stamp)
     collect("scores", "Scores", lambda: scores.fetch(today), brief, stamp)
     collect("teams", "Teams", lambda: teams.fetch(now), brief, stamp)

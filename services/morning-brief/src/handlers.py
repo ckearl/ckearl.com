@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 
-from brief import assemble, auth, config, store, todos, work
+from brief import assemble, auth, config, store, todos, training, work
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -73,3 +73,25 @@ def receive_work(event, _context):
         return respond(event, 400, {"error": "invalid events"})
     store.save_pushed("work", {"events": events, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
     return respond(event, 200, {"received": len(events)})
+
+
+def save_goal(event, _context):
+    """Saves the event to train for from the page, then replans today's Training section."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    try:
+        goal = training.parse_goal(event.get("body") or "", now.date())
+    except ValueError as error:
+        return respond(event, 400, {"error": str(error)})
+    store.save_pushed("goal", goal or {})
+    brief = store.latest()
+    if brief is None or brief["date"] != now.date().isoformat():
+        return respond(event, 200, {"goal": goal})
+    try:
+        brief["training"] = training.fetch(now)
+    except Exception:
+        logging.exception("Replanning failed")
+        return respond(event, 200, {"goal": goal})
+    store.save(brief)
+    return respond(event, 200, {"goal": goal, "training": brief["training"]})

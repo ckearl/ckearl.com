@@ -2,7 +2,8 @@ import BriefWindow from "@/components/morning-brief/BriefWindow";
 import DaySchedule from "@/components/morning-brief/DaySchedule";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
-import type { Brief } from "@/lib/morning-brief/types";
+import TrainingPlan from "@/components/morning-brief/TrainingPlan";
+import type { Brief, GoalRequest } from "@/lib/morning-brief/types";
 
 const stateLabels = { ok: "OK", stale: "Old", failed: "Failed" };
 
@@ -12,7 +13,15 @@ function dueLabel(due: string, today: string) {
   return `Due ${new Date(`${due}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
-export default function BriefView({ brief, stale }: { brief: Brief; stale?: boolean }) {
+export default function BriefView({
+  brief,
+  stale,
+  onSaveGoal,
+}: {
+  brief: Brief;
+  stale?: boolean;
+  onSaveGoal?: (goal: GoalRequest) => Promise<boolean>;
+}) {
   const dateLabel = new Date(`${brief.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -98,37 +107,7 @@ export default function BriefView({ brief, stale }: { brief: Brief; stale?: bool
 
         {training && (
           <BriefWindow title="Training">
-            <p className="muted">Focus: {training.focus}</p>
-            <ul className="plan-list">
-              {training.today.map((item) => (
-                <li key={item.title}>
-                  <p><strong>{item.title}</strong></p>
-                  <p>{item.detail}</p>
-                </li>
-              ))}
-            </ul>
-            <p>{training.why}</p>
-            <h3>This week</h3>
-            <dl className="week-meters">
-              {training.week.map((item) => (
-                <div key={item.label}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.done} of {item.target}</dd>
-                  <span className="bar" aria-hidden="true">
-                    <span style={{ width: `${(item.done / item.target) * 100}%` }} />
-                  </span>
-                </div>
-              ))}
-            </dl>
-            <details className="goal-form">
-              <summary>Change focus or add an event</summary>
-              <form>
-                <label>Focus or event name<input type="text" placeholder="Run farther" /></label>
-                <label>Event date (optional)<input type="date" /></label>
-                <label>Goal time or pace (optional)<input type="text" placeholder="8:30 per mile" /></label>
-                <button type="button" className="gel-button" disabled>Save (not connected yet)</button>
-              </form>
-            </details>
+            <TrainingPlan training={training} onSaveGoal={onSaveGoal} />
           </BriefWindow>
         )}
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import BriefView from "@/components/morning-brief/BriefView";
 import Window from "@/components/new-design/Window";
 import { sampleBrief } from "@/data/morning-brief/sample";
-import type { Brief } from "@/lib/morning-brief/types";
+import type { Brief, GoalRequest, Training } from "@/lib/morning-brief/types";
 
 const API_URL = process.env.NEXT_PUBLIC_BRIEF_API;
 const TOKEN_KEY = "morning-brief-token";
@@ -71,8 +71,28 @@ export default function BriefGate() {
     else setState("locked");
   }, [load, showLoadError]);
 
+  // Saves the event to train for. The backend replans today's Training section and sends it back.
+  const saveGoal = async (goal: GoalRequest) => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const response = await fetch(`${API_URL}/brief/goal`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(goal),
+    });
+    const result: { error?: string; training?: Training } = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error ?? "The goal didn't save.");
+    if (result.training) setBrief((current) => current && { ...current, training: result.training });
+    return Boolean(result.training);
+  };
+
   if (state === "ready" && brief) {
-    return <BriefView brief={brief} stale={!brief.sample && brief.date !== denverToday()} />;
+    return (
+      <BriefView
+        brief={brief}
+        stale={!brief.sample && brief.date !== denverToday()}
+        onSaveGoal={API_URL ? saveGoal : undefined}
+      />
+    );
   }
 
   const submit = (event: FormEvent) => {
