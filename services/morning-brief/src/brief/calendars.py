@@ -1,4 +1,8 @@
-"""Today's events from Google Calendar. Read-only: this never changes a calendar."""
+"""Today's events from Google Calendar. Read-only: this never changes a calendar.
+
+Every calendar on the account is read, whether or not it's checked in the Google Calendar app.
+CALENDAR_OWNERS marks the ones that aren't mine, as comma-separated `id=hers`, `id=shared` or
+`id=skip`. It lives in .env so the IDs stay out of this public repo."""
 
 import os
 from datetime import date, datetime, time, timedelta
@@ -29,11 +33,21 @@ def access_token() -> str:
     return response.json()["access_token"]
 
 
+OWNERS = ("mine", "hers", "shared", "skip")
+
+
+def owners() -> dict[str, str]:
+    tagged = {}
+    for pair in os.environ.get("CALENDAR_OWNERS", "").split(","):
+        calendar_id, _, owner = pair.strip().rpartition("=")
+        if calendar_id and owner in OWNERS:
+            tagged[calendar_id] = owner
+    return tagged
+
+
 def calendar_ids(calendars: dict) -> list[str]:
     return [
-        calendar["id"]
-        for calendar in calendars.get("items", [])
-        if calendar.get("selected") and not calendar["id"].endswith(SKIPPED_CALENDARS)
+        calendar["id"] for calendar in calendars.get("items", []) if not calendar["id"].endswith(SKIPPED_CALENDARS)
     ]
 
 
@@ -47,7 +61,7 @@ def clock(value: dict, today: date, fallback: str) -> str:
 
 
 def to_item(event: dict, today: date) -> dict:
-    item = {"title": event.get("summary") or "Busy", "calendar": "personal"}
+    item = {"title": event.get("summary") or "Busy", "calendar": "personal", "owner": event.get("owner", "mine")}
     if "date" in event["start"]:
         item |= {"start": "00:00", "end": "23:59", "allDay": True}
     else:
@@ -62,8 +76,15 @@ def build(events: list[dict], today: date) -> list[dict]:
     for event in events:
         if event.get("status") != "cancelled" and not declined(event):
             item = to_item(event, today)
-            items[(item["start"], item["end"], item["title"])] = item
-    return sorted(items.values(), key=lambda item: (not item.get("allDay"), item["start"], item["title"]))
+            key = (item["start"], item["end"], item["title"])
+            if key in items and items[key]["owner"] != item["owner"]:
+                item["owner"] = "shared"
+            items[key] = item
+    return order(list(items.values()))
+
+
+def order(items: list[dict]) -> list[dict]:
+    return sorted(items, key=lambda item: (not item.get("allDay"), item["start"], item["title"]))
 
 
 def fetch(today: date) -> list[dict]:
@@ -71,8 +92,12 @@ def fetch(today: date) -> list[dict]:
     start = datetime.combine(today, time.min, tzinfo=config.TIMEZONE)
     end = datetime.combine(today + timedelta(days=1), time.min, tzinfo=config.TIMEZONE)
     params = {"timeMin": start.isoformat(), "timeMax": end.isoformat(), "singleEvents": "true", "maxResults": 50}
+    tagged = owners()
     events = []
     for calendar_id in calendar_ids(get_json(f"{API_URL}/users/me/calendarList", headers=headers)):
+        owner = tagged.get(calendar_id, "mine")
+        if owner == "skip":
+            continue
         url = f"{API_URL}/calendars/{requests.utils.quote(calendar_id, safe='')}/events"
-        events += get_json(url, params, headers).get("items", [])
+        events += [{**event, "owner": owner} for event in get_json(url, params, headers).get("items", [])]
     return build(events, today)

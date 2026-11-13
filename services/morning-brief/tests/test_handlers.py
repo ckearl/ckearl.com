@@ -106,7 +106,7 @@ def todos_request(key=None, body='{"items": [{"title": "Fix the gate"}]}'):
 def setup_todos(monkeypatch):
     saved = []
     monkeypatch.setenv("TODOS_KEY_HASH", TODOS_HASH)
-    monkeypatch.setattr(handlers.store, "save_todos", saved.append)
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: saved.append(body) if kind == "todos" else None)
     return saved
 
 
@@ -148,3 +148,18 @@ def test_the_todos_key_cannot_read_the_brief(monkeypatch):
     setup(monkeypatch, {"date": "2026-11-02"})
     setup_todos(monkeypatch)
     assert handlers.today(request("todos-key"), None)["statusCode"] == 401
+
+
+def test_work_saves_todays_events_with_the_shortcut_key(monkeypatch):
+    saved = []
+    monkeypatch.setenv("TODOS_KEY_HASH", TODOS_HASH)
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: saved.append((kind, body)))
+    body = '{"events": [{"start": "2026-11-03T09:00:00-07:00", "end": "2026-11-03T10:00:00-07:00"}]}'
+    response = handlers.receive_work(todos_request("todos-key", body), None)
+    assert response["statusCode"] == 200
+    assert json.loads(response["body"]) == {"received": 1}
+    assert saved[0][0] == "work"
+    assert len(saved[0][1]["events"]) == 1
+    assert handlers.receive_work(todos_request("wrong", body), None)["statusCode"] == 401
+    assert handlers.receive_work(todos_request("todos-key", "nope"), None)["statusCode"] == 400
+    assert len(saved) == 1

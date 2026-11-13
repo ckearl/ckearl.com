@@ -131,10 +131,12 @@ export const sampleBrief: Brief = {
       end: "16:45",
       title: "Haircut",
       calendar: "personal",
+      owner: "hers",
       place: "Orem",
       travel: { minutes: { walk: 74, bike: 31, drive: 16 }, mode: "drive" },
     },
-    { start: "19:30", end: "21:00", title: "Basketball", calendar: "personal" },
+    { start: "18:00", end: "19:00", title: "Family dinner", calendar: "personal", owner: "shared" },
+    { start: "19:30", end: "21:00", title: "Basketball", calendar: "personal", owner: "mine" },
   ],
   todos: {
     list: "to do @ 집",

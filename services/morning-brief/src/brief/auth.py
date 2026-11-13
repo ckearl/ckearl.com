@@ -27,7 +27,7 @@ def bearer(event: dict) -> tuple[str, str]:
 
 
 def todos_key_matches(event: dict) -> bool:
-    """The iPhone Shortcut's own key. It can send the list and nothing else."""
+    """The iPhone Shortcuts' own key. It can send Reminders and work events and nothing else."""
     scheme, key = bearer(event)
     return scheme == "Bearer" and hash_matches(key, os.environ.get("TODOS_KEY_HASH"))
 

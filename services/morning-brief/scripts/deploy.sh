@@ -16,5 +16,6 @@ sam deploy --parameter-overrides \
   "GoogleClientSecret=$GOOGLE_CLIENT_SECRET" \
   "GoogleRefreshToken=$GOOGLE_REFRESH_TOKEN" \
   "TodosKeyHash=$TODOS_KEY_HASH" \
+  "CalendarOwners=${CALENDAR_OWNERS:-}" \
   "AnthropicApiKey=$ANTHROPIC_API_KEY" \
   "$@"

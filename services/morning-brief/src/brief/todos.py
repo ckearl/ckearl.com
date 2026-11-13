@@ -45,7 +45,7 @@ def parse(body: str) -> list[dict]:
 
 
 def fetch() -> dict:
-    saved = store.latest_todos()
+    saved = store.latest_pushed("todos")
     if saved is None:
         raise LookupError("No list received yet")
     return {"list": config.TODO_LIST, **saved}

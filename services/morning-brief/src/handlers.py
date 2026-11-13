@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime
 
-from brief import assemble, auth, config, store, todos
+from brief import assemble, auth, config, store, todos, work
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -60,5 +60,16 @@ def receive_todos(event, _context):
         items = todos.parse(event.get("body") or "")
     except ValueError:
         return respond(event, 400, {"error": "invalid list"})
-    store.save_todos({"items": items, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
+    store.save_pushed("todos", {"items": items, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
     return respond(event, 200, {"received": len(items)})
+
+
+def receive_work(event, _context):
+    if not auth.todos_key_matches(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    try:
+        events = work.parse(event.get("body") or "")
+    except ValueError:
+        return respond(event, 400, {"error": "invalid events"})
+    store.save_pushed("work", {"events": events, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
+    return respond(event, 200, {"received": len(events)})

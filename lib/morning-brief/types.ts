@@ -12,6 +12,8 @@ export type Score = {
   url?: string | null; // ESPN Gamecast
 };
 
+export type Owner = "mine" | "hers" | "shared";
+
 export type TravelMode = "walk" | "bike" | "drive";
 
 export type ScheduleItem = {
@@ -19,6 +21,7 @@ export type ScheduleItem = {
   end: string;
   title: string;
   calendar: "personal" | "work";
+  owner?: Owner; // missing on briefs from before owners were tracked, which count as mine
   allDay?: boolean;
   place?: string;
   travel?: { minutes: Record<TravelMode, number>; mode: TravelMode };

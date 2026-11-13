@@ -9,8 +9,7 @@ from boto3.dynamodb.conditions import Key
 
 KEEP_SECONDS = 90 * 24 * 60 * 60
 PARTITION = "brief"
-TODOS_PARTITION = "todos"
-TODOS_DATE = "latest"
+PUSHED_DATE = "latest"
 
 
 def table():
@@ -34,17 +33,18 @@ def latest() -> dict | None:
     return json.loads(items[0]["body"]) if items else None
 
 
-def save_todos(todos: dict) -> None:
+def save_pushed(kind: str, body: dict) -> None:
+    """The newest list an iPhone Shortcut sent, such as "todos" or "work". Each send replaces the last."""
     table().put_item(
         Item={
-            "pk": TODOS_PARTITION,
-            "date": TODOS_DATE,
-            "body": json.dumps(todos, ensure_ascii=False),
+            "pk": kind,
+            "date": PUSHED_DATE,
+            "body": json.dumps(body, ensure_ascii=False),
             "expiresAt": int(time.time()) + KEEP_SECONDS,
         }
     )
 
 
-def latest_todos() -> dict | None:
-    item = table().get_item(Key={"pk": TODOS_PARTITION, "date": TODOS_DATE}).get("Item")
+def latest_pushed(kind: str) -> dict | None:
+    item = table().get_item(Key={"pk": kind, "date": PUSHED_DATE}).get("Item")
     return json.loads(item["body"]) if item else None

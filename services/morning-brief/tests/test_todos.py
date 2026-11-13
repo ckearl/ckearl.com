@@ -48,12 +48,12 @@ def test_rejects_malformed_bodies(body):
 
 
 def test_fetch_adds_the_list_name(monkeypatch):
-    monkeypatch.setattr(todos.store, "latest_todos", lambda: {"items": [], "receivedAt": NOW.isoformat()})
+    monkeypatch.setattr(todos.store, "latest_pushed", lambda kind: {"items": [], "receivedAt": NOW.isoformat()})
     assert todos.fetch()["list"] == "to do @ 집"
 
 
 def test_fetch_fails_before_anything_has_been_sent(monkeypatch):
-    monkeypatch.setattr(todos.store, "latest_todos", lambda: None)
+    monkeypatch.setattr(todos.store, "latest_pushed", lambda kind: None)
     with pytest.raises(LookupError):
         todos.fetch()
 
