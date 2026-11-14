@@ -1,9 +1,14 @@
 """Weather from NWS, plus air quality and sunrise from Open-Meteo."""
 
+import logging
 from datetime import date, datetime
+
+import requests
 
 from brief import config
 from brief.http import get_json
+
+logger = logging.getLogger(__name__)
 
 # (label, display time, hour used for the forecast)
 TRAINING_SLOTS = [
@@ -90,7 +95,7 @@ def training_windows(hourly: list[dict], aqi_by_hour: dict[str, float], today: d
     return windows
 
 
-def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict, today: date) -> dict:
+def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict | None, today: date) -> dict:
     periods = forecast["properties"]["periods"]
     hours = hourly["properties"]["periods"]
     now = hours[0]
@@ -109,8 +114,8 @@ def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict, toda
         "conditions": now["shortForecast"],
         "details": (
             f"{rain}% rain, wind {now['windDirection']} {wind_mph(now['windSpeed'])} mph, "
-            f"air quality {aqi_label(aqi)} (AQI {round(aqi) if aqi is not None else 'unknown'}). "
-            f"Sunrise {short_time(sun['daily']['sunrise'][0])}, sunset {short_time(sun['daily']['sunset'][0])}."
+            f"air quality {aqi_label(aqi)} (AQI {round(aqi) if aqi is not None else 'unknown'})."
+            + (f" Sunrise {short_time(sun['daily']['sunrise'][0])}, sunset {short_time(sun['daily']['sunset'][0])}." if sun else "")
         ),
         "plan": clothing_plan(low, high, rain),
         "trainingWindows": training_windows(hours, aqi_by_hour, today),
@@ -132,9 +137,15 @@ def fetch(today: date) -> dict:
             "https://air-quality-api.open-meteo.com/v1/air-quality",
             {**location, "current": "us_aqi", "hourly": "us_aqi", "forecast_days": 2},
         ),
-        get_json(
-            "https://api.open-meteo.com/v1/forecast",
-            {**location, "daily": "sunrise,sunset", "forecast_days": 1},
-        ),
+        sun_times(location),
         today,
     )
+
+
+def sun_times(location: dict) -> dict | None:
+    """Sunrise and sunset are a nice extra, so an outage leaves them out instead of failing the window."""
+    try:
+        return get_json("https://api.open-meteo.com/v1/forecast", {**location, "daily": "sunrise,sunset", "forecast_days": 1})
+    except requests.RequestException:
+        logger.warning("Sunrise and sunset unavailable", exc_info=True)
+        return None

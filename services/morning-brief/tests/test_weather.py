@@ -72,3 +72,21 @@ def test_build_reports_an_active_alert():
     assert brief["alert"] == "Winter Storm Warning"
     assert brief["high"] == "52°" and brief["low"] == "31°"
     assert "AQI 41" in brief["details"] and "7:10 AM" in brief["details"]
+
+
+def test_sunrise_outage_leaves_the_rest_of_the_weather(monkeypatch):
+    def fail(*_args, **_kwargs):
+        raise weather.requests.ConnectionError("down")
+
+    monkeypatch.setattr(weather, "get_json", fail)
+    assert weather.sun_times({}) is None
+    forecast = {"properties": {"periods": [{"isDaytime": True, "temperature": 52}, {"isDaytime": False, "temperature": 31}]}}
+    brief = weather.build(
+        forecast,
+        {"properties": {"periods": [hour(6), hour(17), hour(20)]}},
+        {},
+        {"current": {"us_aqi": 41}, "hourly": {"time": [], "us_aqi": []}},
+        None,
+        TODAY,
+    )
+    assert brief["details"].endswith("(AQI 41).")
