@@ -162,7 +162,7 @@ Resources:
           TODOS_KEY_HASH: !Ref TodosKeyHash
           ALLOWED_ORIGINS: !Ref AllowedOrigins
       Policies:
-        - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
       Events:
         Todos:
           Type: Api

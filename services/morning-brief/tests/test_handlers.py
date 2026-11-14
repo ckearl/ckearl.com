@@ -107,7 +107,37 @@ def setup_todos(monkeypatch):
     saved = []
     monkeypatch.setenv("TODOS_KEY_HASH", TODOS_HASH)
     monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: saved.append(body) if kind == "todos" else None)
+    monkeypatch.setattr(handlers.store, "latest", lambda: None)
     return saved
+
+
+def test_a_late_list_updates_todays_brief(monkeypatch):
+    setup_todos(monkeypatch)
+    today = handlers.datetime.now(handlers.config.TIMEZONE).date().isoformat()
+    brief = {
+        "date": today,
+        "sources": [
+            {"name": "Calendar", "state": "ok", "note": "Updated 4:30 AM"},
+            {"name": "Reminders", "state": "stale", "note": "Last received Nov 1"},
+        ],
+    }
+    stored = []
+    monkeypatch.setattr(handlers.store, "latest", lambda: brief)
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    assert handlers.receive_todos(todos_request("todos-key"), None)["statusCode"] == 200
+    assert stored[0]["todos"]["items"] == [{"title": "Fix the gate"}]
+    assert stored[0]["sources"][0]["name"] == "Calendar"
+    assert stored[0]["sources"][1]["state"] == "ok"
+    assert stored[0]["sources"][1]["note"].startswith("Updated ")
+
+
+def test_a_list_does_not_touch_an_old_brief(monkeypatch):
+    setup_todos(monkeypatch)
+    stored = []
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": "2026-01-01", "sources": []})
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    assert handlers.receive_todos(todos_request("todos-key"), None)["statusCode"] == 200
+    assert stored == []
 
 
 def test_todos_saves_the_list_with_the_right_key(monkeypatch):

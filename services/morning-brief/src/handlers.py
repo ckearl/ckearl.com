@@ -60,8 +60,23 @@ def receive_todos(event, _context):
         items = todos.parse(event.get("body") or "")
     except ValueError:
         return respond(event, 400, {"error": "invalid list"})
-    store.save_pushed("todos", {"items": items, "receivedAt": datetime.now(config.TIMEZONE).isoformat()})
+    now = datetime.now(config.TIMEZONE)
+    saved = {"items": items, "receivedAt": now.isoformat()}
+    store.save_pushed("todos", saved)
+    update_todays_todos(saved, now)
     return respond(event, 200, {"received": len(items)})
+
+
+def update_todays_todos(saved: dict, now: datetime) -> None:
+    """A list that arrives after the 4:30 brief still shows today."""
+    brief = store.latest()
+    if brief is None or brief["date"] != now.date().isoformat():
+        return
+    brief["todos"] = {"list": config.TODO_LIST, **saved}
+    stamp = f"{now.hour % 12 or 12}:{now.minute:02d} {'AM' if now.hour < 12 else 'PM'}"
+    fresh = {"name": "Reminders", "state": "ok", "note": f"Updated {stamp}"}
+    brief["sources"] = [fresh if source["name"] == "Reminders" else source for source in brief["sources"]]
+    store.save(brief)
 
 
 def receive_work(event, _context):
