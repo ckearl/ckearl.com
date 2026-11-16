@@ -18,7 +18,7 @@ def test_one_failed_source_does_not_stop_the_others(monkeypatch):
     monkeypatch.setattr(assemble.listening, "fetch", lambda _today: {})
     monkeypatch.setattr(assemble.ski, "fetch", lambda _now: None)
     monkeypatch.setattr(assemble.todos, "fetch", lambda: {"items": [], "receivedAt": NOW.isoformat()})
-    monkeypatch.setattr(assemble.claude, "fetch", lambda _brief, _today: {"game_plan": [], "top_stories": [], "sports_line": "Quiet night."})
+    monkeypatch.setattr(assemble.claude, "fetch", lambda _brief, _today: {"day_plan": [], "top_stories": [], "sports_line": "Quiet night."})
 
     brief = assemble.build(NOW)
 
@@ -52,4 +52,4 @@ def test_a_claude_failure_still_publishes_the_brief(monkeypatch):
 
     states = {source["name"]: source["state"] for source in brief["sources"]}
     assert states["Claude"] == "failed"
-    assert "gamePlan" not in brief
+    assert "suggestions" not in brief

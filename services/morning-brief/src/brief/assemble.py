@@ -5,7 +5,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from brief import calendars, claude, config, listening, news, scores, ski, teams, todos, training, weather, words, work
+from brief import calendars, claude, config, listening, meals, news, scores, ski, teams, todos, training, weather, words, work
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +27,13 @@ def build(now: datetime | None = None) -> dict:
     stamp = f"{now.hour % 12 or 12}:{now.minute:02d} {'AM' if now.hour < 12 else 'PM'}"
     brief: dict = {"date": today.isoformat(), "generatedAt": now.isoformat(), "scores": [], "sources": []}
     collect("schedule", "Calendar", lambda: calendars.fetch(today), brief, stamp)
-    collect("work", "Work calendar", lambda: work.fetch(today), brief, stamp)
-    work.merge(brief, now)
+    collect("work", "Work hours", lambda: work.fetch(today, now), brief, stamp)
+    work.merge(brief)
     collect("todos", "Reminders", todos.fetch, brief, stamp)
     todos.flag_stale(brief, now)
     collect("training", "Training", lambda: training.fetch(now), brief, stamp)
-    collect("weather", "Weather", lambda: weather.fetch(today), brief, stamp)
+    collect("meals", "Meals", lambda: meals.week(today), brief, stamp)
+    collect("weather", "Weather", lambda: weather.fetch(today, brief.get("schedule")), brief, stamp)
     collect("scores", "Scores", lambda: scores.fetch(today), brief, stamp)
     collect("teams", "Teams", lambda: teams.fetch(now), brief, stamp)
     collect("news", "News", news.fetch, brief, stamp)

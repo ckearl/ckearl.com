@@ -5,18 +5,53 @@ from datetime import date, datetime
 
 import requests
 
-from brief import config
+from brief import config, work
 from brief.http import get_json
 
 logger = logging.getLogger(__name__)
 
-# (label, display time, hour used for the forecast)
-TRAINING_SLOTS = [
-    ("Early morning", "6:00–7:00 AM", 6),
-    ("After work", "5:15–6:15 PM", 17),
-    ("Night", "8:00–9:00 PM", 20),
-]
-PREFERRED_SLOT = "After work"
+# (label, start, end). The first listed slot wins a tie. "After work" starts 15 minutes after the work day.
+WEEKEND_SLOTS = [("Morning", "08:00", "09:00"), ("Midday", "12:00", "13:00"), ("Afternoon", "16:00", "17:00")]
+SLOT_MINUTES = 60
+
+
+def to_minutes(clock: str) -> int:
+    hours, minutes = clock.split(":")
+    return int(hours) * 60 + int(minutes)
+
+
+def to_clock(total: int) -> str:
+    return f"{total // 60:02d}:{total % 60:02d}"
+
+
+def display(start: str, end: str) -> str:
+    def part(clock: str) -> str:
+        hours, minutes = divmod(to_minutes(clock), 60)
+        return f"{hours % 12 or 12}:{minutes:02d}"
+
+    return f"{part(start)}–{part(end)} {'AM' if to_minutes(end) <= 12 * 60 else 'PM'}"
+
+
+def training_slots(today: date) -> list[tuple[str, str, str]]:
+    """Weekday slots work around the work day. Days off use daytime slots, since there's no "after work"."""
+    days, _start, end = work.usual_hours()
+    if today.weekday() not in days:
+        return WEEKEND_SLOTS
+    after = to_minutes(end) + 15
+    return [
+        ("After work", to_clock(after), to_clock(after + SLOT_MINUTES)),
+        ("Early morning", "06:00", "07:00"),
+        ("Night", "20:00", "21:00"),
+    ]
+
+
+def busy_times(schedule: list[dict]) -> list[tuple[int, int]]:
+    """Timed events that are his or shared. Her events and all-day entries don't block a workout."""
+    return [
+        (to_minutes(item["start"]), to_minutes(item["end"]))
+        for item in schedule
+        if not item.get("allDay") and item.get("owner", "mine") != "hers"
+    ]
 
 
 def wind_mph(text: str) -> int:
@@ -66,13 +101,16 @@ def slot_penalty(temperature: int, wind: int, rain: int, aqi: float | None) -> i
     return penalty
 
 
-def training_windows(hourly: list[dict], aqi_by_hour: dict[str, float], today: date) -> list[dict]:
+def training_windows(hourly: list[dict], aqi_by_hour: dict[str, float], today: date, schedule: list[dict] | None = None) -> list[dict]:
     by_hour = {
         period["startTime"][:13]: period for period in hourly if period["startTime"][:10] == today.isoformat()
     }
+    busy = busy_times(schedule or [])
     windows = []
-    for label, display, hour in TRAINING_SLOTS:
-        key = f"{today.isoformat()}T{hour:02d}"
+    for rank, (label, start, end) in enumerate(training_slots(today)):
+        if any(to_minutes(start) < busy_end and busy_start < to_minutes(end) for busy_start, busy_end in busy):
+            continue
+        key = f"{today.isoformat()}T{start[:2]}"
         period = by_hour.get(key)
         if not period:
             continue
@@ -82,20 +120,23 @@ def training_windows(hourly: list[dict], aqi_by_hour: dict[str, float], today: d
         windows.append(
             {
                 "label": label,
-                "time": display,
+                "time": display(start, end),
+                "start": start,
+                "end": end,
                 "conditions": f"{period['temperature']}°, wind {wind} mph, {rain}% rain, air {aqi_label(aqi)}",
                 "penalty": slot_penalty(period["temperature"], wind, rain, aqi),
+                "rank": rank,
             }
         )
     if windows:
-        best = min(windows, key=lambda window: (window["penalty"], window["label"] != PREFERRED_SLOT))
+        best = min(windows, key=lambda window: (window["penalty"], window["rank"]))
         best["best"] = True
     for window in windows:
-        del window["penalty"]
-    return windows
+        del window["penalty"], window["rank"]
+    return sorted(windows, key=lambda window: window["start"])
 
 
-def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict | None, today: date) -> dict:
+def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict | None, today: date, schedule: list[dict] | None = None) -> dict:
     periods = forecast["properties"]["periods"]
     hours = hourly["properties"]["periods"]
     now = hours[0]
@@ -118,7 +159,7 @@ def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict | Non
             + (f" Sunrise {short_time(sun['daily']['sunrise'][0])}, sunset {short_time(sun['daily']['sunset'][0])}." if sun else "")
         ),
         "plan": clothing_plan(low, high, rain),
-        "trainingWindows": training_windows(hours, aqi_by_hour, today),
+        "trainingWindows": training_windows(hours, aqi_by_hour, today, schedule),
     }
     active = [feature["properties"]["headline"] for feature in alerts.get("features", [])]
     if active:
@@ -126,7 +167,7 @@ def build(forecast: dict, hourly: dict, alerts: dict, air: dict, sun: dict | Non
     return brief
 
 
-def fetch(today: date) -> dict:
+def fetch(today: date, schedule: list[dict] | None = None) -> dict:
     point = get_json(f"https://api.weather.gov/points/{config.LATITUDE},{config.LONGITUDE}")["properties"]
     location = {"latitude": config.LATITUDE, "longitude": config.LONGITUDE, "timezone": "America/Denver"}
     return build(
@@ -139,6 +180,7 @@ def fetch(today: date) -> dict:
         ),
         sun_times(location),
         today,
+        schedule,
     )
 
 

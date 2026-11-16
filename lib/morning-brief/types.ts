@@ -23,11 +23,32 @@ export type ScheduleItem = {
   calendar: "personal" | "work";
   owner?: Owner; // missing on briefs from before owners were tracked, which count as mine
   allDay?: boolean;
+  usual?: boolean; // work blocks from the usual work hours, not real meeting times
   place?: string;
   travel?: { minutes: Record<TravelMode, number>; mode: TravelMode };
 };
 
-export type TrainingWindow = { label: string; time: string; conditions: string; best?: boolean };
+export type TrainingWindow = {
+  label: string;
+  time: string;
+  conditions: string;
+  best?: boolean;
+  start?: string; // "HH:MM", missing on older briefs
+  end?: string;
+};
+
+export type SuggestionKind = "todo" | "workout" | "music" | "dinner" | "chores" | "reading" | "groceries" | "meal_prep";
+
+// A time Claude suggests for something, checked against the calendar so it never overlaps an event.
+export type Suggestion = { start: string; end: string; title: string; kind: SuggestionKind; why: string };
+
+export type MealDay = { date: string; day: string; lunch?: string; dinner?: string };
+
+// What saving the meals form sends: only the days shown, each replacing what was saved.
+export type MealsRequest = { days: Record<string, { lunch?: string; dinner?: string }> };
+
+// A new Google Calendar event: timed with "HH:MM" start and end, or all day.
+export type NewEvent = { title: string; date: string } & ({ start: string; end: string } | { allDay: true });
 
 export type GoalKind = "5k" | "10k" | "half" | "marathon" | "swim";
 
@@ -70,7 +91,8 @@ export type Brief = {
     receivedAt: string;
     items: { title: string; due?: string; notes?: string }[]; // due is "YYYY-MM-DD"
   };
-  gamePlan?: { task: string; estimate: string; why: string }[];
+  suggestions?: Suggestion[];
+  meals?: MealDay[];
   training?: Training;
   teams?: { team: Team; update: string; next: string }[];
   listening?: {

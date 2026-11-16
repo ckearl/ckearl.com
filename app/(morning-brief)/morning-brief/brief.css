@@ -341,6 +341,29 @@ a.score-card:focus-visible {
   color: var(--slate-mid);
 }
 
+/* Suggested times: a dashed edge so they never read as real events. */
+.is-suggested {
+  border-left-style: dashed;
+  background: color-mix(in srgb, var(--tan-light) 55%, transparent);
+}
+
+.suggestion-kind {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--slate-mid);
+}
+
+.is-suggested .text-button {
+  margin-top: 0.2rem;
+  font-size: 15px;
+}
+
+.is-suggested .text-button:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
 .mode-picker {
   display: flex;
   margin-top: 0.3rem;
@@ -430,6 +453,40 @@ a.score-card:focus-visible {
   font-size: 16px;
   background: #fff;
   border: 1px solid var(--slate);
+}
+
+.goal-form .check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.goal-form .check-label input {
+  width: auto;
+}
+
+.time-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.meal-day {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.meal-day legend {
+  padding: 0;
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+}
+
+.meal-list li {
+  align-items: start;
 }
 
 .goal-actions {

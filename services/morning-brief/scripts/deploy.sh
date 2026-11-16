@@ -20,5 +20,6 @@ sam deploy --parameter-overrides \
   "GarminApiKey=$GARMIN_API_KEY" \
   "TrainingEasyPace=${TRAINING_EASY_PACE:-}" \
   "TrainingBaseMiles=${TRAINING_BASE_MILES:-7.5}" \
+  "WorkHours=${WORK_HOURS:-Mon-Fri,08:00-17:00}" \
   "AnthropicApiKey=$ANTHROPIC_API_KEY" \
   "$@"

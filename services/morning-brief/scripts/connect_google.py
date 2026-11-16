@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Connects Google Calendar with read-only access, once.
+"""Connects Google Calendar, once: read every calendar, and add events from the page.
 
 Opens Google's sign-in page, catches the redirect on 127.0.0.1, and writes the client ID,
 client secret and refresh token into .env. Nothing secret is printed.
 
-Usage: python3 scripts/connect_google.py ~/Downloads/client_secret_XXXX.json
+Usage: python3 scripts/connect_google.py [~/Downloads/client_secret_XXXX.json]
+Without a file, it reuses the client already saved in .env.
 """
 
 import base64
@@ -21,7 +22,7 @@ from pathlib import Path
 
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
-SCOPE = "https://www.googleapis.com/auth/calendar.readonly"
+SCOPE = "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events"
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 
@@ -51,9 +52,15 @@ def set_env(values: dict) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    if len(sys.argv) > 2:
         sys.exit(__doc__)
-    client = json.loads(Path(sys.argv[1]).expanduser().read_text())["installed"]
+    if len(sys.argv) == 2:
+        client = json.loads(Path(sys.argv[1]).expanduser().read_text())["installed"]
+    else:
+        saved = dict(re.findall(r"^(GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET)=(.+)$", ENV_PATH.read_text(), flags=re.M))
+        if len(saved) != 2:
+            sys.exit("No Google client in .env yet. Pass the client_secret JSON file.\n\n" + __doc__)
+        client = {"client_id": saved["GOOGLE_CLIENT_ID"], "client_secret": saved["GOOGLE_CLIENT_SECRET"]}
 
     server = HTTPServer(("127.0.0.1", 0), Callback)
     redirect_uri = f"http://127.0.0.1:{server.server_port}"

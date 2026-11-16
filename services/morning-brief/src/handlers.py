@@ -3,7 +3,9 @@ import logging
 import os
 from datetime import datetime
 
-from brief import assemble, auth, config, store, todos, training, work
+import requests
+
+from brief import assemble, auth, calendars, config, meals, store, todos, training, work
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -67,14 +69,22 @@ def receive_todos(event, _context):
     return respond(event, 200, {"received": len(items)})
 
 
+def clock_stamp(now: datetime) -> str:
+    return f"{now.hour % 12 or 12}:{now.minute:02d} {'AM' if now.hour < 12 else 'PM'}"
+
+
+def todays_brief(now: datetime) -> dict | None:
+    brief = store.latest()
+    return brief if brief and brief["date"] == now.date().isoformat() else None
+
+
 def update_todays_todos(saved: dict, now: datetime) -> None:
     """A list that arrives after the 4:30 brief still shows today."""
-    brief = store.latest()
-    if brief is None or brief["date"] != now.date().isoformat():
+    brief = todays_brief(now)
+    if brief is None:
         return
     brief["todos"] = {"list": config.TODO_LIST, **saved}
-    stamp = f"{now.hour % 12 or 12}:{now.minute:02d} {'AM' if now.hour < 12 else 'PM'}"
-    fresh = {"name": "Reminders", "state": "ok", "note": f"Updated {stamp}"}
+    fresh = {"name": "Reminders", "state": "ok", "note": f"Updated {clock_stamp(now)}"}
     brief["sources"] = [fresh if source["name"] == "Reminders" else source for source in brief["sources"]]
     store.save(brief)
 
@@ -110,3 +120,43 @@ def save_goal(event, _context):
         return respond(event, 200, {"goal": goal})
     store.save(brief)
     return respond(event, 200, {"goal": goal, "training": brief["training"]})
+
+
+def save_meals(event, _context):
+    """Saves meals written on the page and shows them in today's brief right away."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    try:
+        days = meals.parse(event.get("body") or "", now.date())
+    except ValueError as error:
+        return respond(event, 400, {"error": str(error)})
+    meals.save(days, now.date())
+    week = meals.week(now.date())
+    brief = todays_brief(now)
+    if brief is not None:
+        brief["meals"] = week
+        store.save(brief)
+    return respond(event, 200, {"meals": week})
+
+
+def add_event(event, _context):
+    """Adds an event to the primary Google Calendar, and to today's schedule if it's today."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    try:
+        new_event = calendars.parse_event(event.get("body") or "", now.date())
+    except ValueError as error:
+        return respond(event, 400, {"error": str(error)})
+    try:
+        calendars.create(new_event)
+    except requests.RequestException:
+        logging.exception("Adding the event failed")
+        return respond(event, 502, {"error": "Google Calendar didn't take the event. Try again in a minute."})
+    item = calendars.as_item(new_event)
+    brief = todays_brief(now) if new_event["date"] == now.date().isoformat() else None
+    if brief is not None:
+        brief["schedule"] = calendars.order(brief.get("schedule", []) + [item])
+        store.save(brief)
+    return respond(event, 200, {"event": new_event, "item": item if brief is not None else None})

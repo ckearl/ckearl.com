@@ -6,7 +6,7 @@ TIMEZONE = ZoneInfo("America/Denver")
 LATITUDE = 40.2338
 LONGITUDE = -111.6585
 
-CLAUDE_MODEL = "claude-haiku-5-5"
+CLAUDE_MODEL = "claude-opus-5-5"
 
 # Alta, for the Cottonwoods snow forecast.
 SKI_LATITUDE = 40.5885

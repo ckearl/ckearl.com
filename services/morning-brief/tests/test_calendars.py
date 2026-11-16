@@ -1,4 +1,7 @@
+import json
 from datetime import date
+
+import pytest
 
 from brief import calendars
 
@@ -119,3 +122,60 @@ def test_week_groups_events_by_day_including_multi_day_ones(monkeypatch):
         ["Trip"],
         ["Trip"],
     ]
+
+
+EVENT_DAY = date(2026, 11, 15)
+
+
+def event_body(**fields):
+    return json.dumps({"title": "Dentist", "date": "2026-11-16", "start": "09:00", "end": "09:45", **fields})
+
+
+def test_parse_event_keeps_a_timed_event():
+    assert calendars.parse_event(event_body(), EVENT_DAY) == {"title": "Dentist", "date": "2026-11-16", "start": "09:00", "end": "09:45"}
+
+
+def test_parse_event_keeps_an_all_day_event():
+    assert calendars.parse_event(event_body(allDay=True, start=None), EVENT_DAY) == {"title": "Dentist", "date": "2026-11-16", "allDay": True}
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"title": " "},
+        {"date": "soon"},
+        {"date": "2028-01-01"},
+        {"start": "9am"},
+        {"start": "25:00"},
+        {"end": "08:00"},
+    ],
+)
+def test_parse_event_rejects_bad_fields(fields):
+    with pytest.raises(ValueError):
+        calendars.parse_event(event_body(**fields), EVENT_DAY)
+
+
+def test_google_event_uses_mountain_time_and_an_exclusive_all_day_end():
+    timed = calendars.google_event({"title": "Dentist", "date": "2026-11-16", "start": "09:00", "end": "09:45"})
+    assert timed["start"] == {"dateTime": "2026-11-16T09:00:00", "timeZone": "America/Denver"}
+    all_day = calendars.google_event({"title": "Trip", "date": "2026-11-30", "allDay": True})
+    assert all_day["end"] == {"date": "2026-12-01"}
+
+
+def test_create_posts_to_the_primary_calendar(monkeypatch):
+    sent = {}
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+    def post(url, json, headers, timeout):
+        sent.update(url=url, json=json, auth=headers["Authorization"])
+        return Response()
+
+    monkeypatch.setattr(calendars, "access_token", lambda: "token")
+    monkeypatch.setattr(calendars.requests, "post", post)
+    calendars.create({"title": "Dentist", "date": "2026-11-16", "start": "09:00", "end": "09:45"})
+    assert sent["url"].endswith("/calendars/primary/events")
+    assert sent["json"]["summary"] == "Dentist"
+    assert sent["auth"] == "Bearer token"

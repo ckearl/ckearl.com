@@ -231,3 +231,66 @@ def test_goal_can_be_cleared_and_rejects_bad_input(monkeypatch):
     assert handlers.save_goal(goal_request(monkeypatch, '{"kind": "ultra", "date": "2030-01-01"}'), None)["statusCode"] == 400
     assert handlers.save_goal(goal_request(monkeypatch, '{"clear": true}'), None)["statusCode"] == 200
     assert saved == [("goal", {})]
+
+
+def authed(monkeypatch, body):
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
+    token = handlers.auth.issue_token()
+    return {"headers": {"Authorization": f"Bearer {token}"}, "body": body}
+
+
+def todays_date():
+    return handlers.datetime.now(handlers.config.TIMEZONE).date()
+
+
+def test_meals_save_and_update_todays_brief(monkeypatch):
+    stored, pushed = [], []
+    brief = {"date": todays_date().isoformat(), "sources": []}
+    monkeypatch.setattr(handlers.store, "latest", lambda: brief)
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    monkeypatch.setattr(handlers.meals.store, "latest_pushed", lambda kind: pushed[-1] if pushed else None)
+    monkeypatch.setattr(handlers.meals.store, "save_pushed", lambda kind, body: pushed.append(body))
+    body = json.dumps({"days": {todays_date().isoformat(): {"dinner": "Tacos"}}})
+    response = handlers.save_meals(authed(monkeypatch, body), None)
+    assert response["statusCode"] == 200
+    assert json.loads(response["body"])["meals"][0]["dinner"] == "Tacos"
+    assert stored[0]["meals"][0]["dinner"] == "Tacos"
+
+
+def test_meals_need_the_page_login(monkeypatch):
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
+    monkeypatch.setenv("TODOS_KEY_HASH", TODOS_HASH)
+    assert handlers.save_meals(todos_request("todos-key", '{"days": {}}'), None)["statusCode"] == 401
+    assert handlers.add_event(todos_request("todos-key", "{}"), None)["statusCode"] == 401
+
+
+def test_meals_reject_a_bad_body(monkeypatch):
+    assert handlers.save_meals(authed(monkeypatch, '{"days": "tacos"}'), None)["statusCode"] == 400
+
+
+def test_add_event_creates_it_and_adds_todays_to_the_schedule(monkeypatch):
+    created, stored = [], []
+    brief = {"date": todays_date().isoformat(), "schedule": [{"title": "Work", "start": "08:00", "end": "17:00"}], "sources": []}
+    monkeypatch.setattr(handlers.calendars, "create", created.append)
+    monkeypatch.setattr(handlers.store, "latest", lambda: brief)
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    body = json.dumps({"title": "Read", "date": todays_date().isoformat(), "start": "21:00", "end": "21:30"})
+    response = handlers.add_event(authed(monkeypatch, body), None)
+    assert response["statusCode"] == 200
+    assert created[0]["title"] == "Read"
+    assert [item["title"] for item in stored[0]["schedule"]] == ["Work", "Read"]
+    assert json.loads(response["body"])["item"]["start"] == "21:00"
+
+
+def test_add_event_reports_a_google_failure(monkeypatch):
+    def fail(_event):
+        raise handlers.requests.HTTPError("403")
+
+    monkeypatch.setattr(handlers.calendars, "create", fail)
+    body = json.dumps({"title": "Read", "date": todays_date().isoformat(), "start": "21:00", "end": "21:30"})
+    assert handlers.add_event(authed(monkeypatch, body), None)["statusCode"] == 502
+
+
+def test_add_event_rejects_bad_times(monkeypatch):
+    body = json.dumps({"title": "Read", "date": todays_date().isoformat(), "start": "21:30", "end": "21:00"})
+    assert handlers.add_event(authed(monkeypatch, body), None)["statusCode"] == 400

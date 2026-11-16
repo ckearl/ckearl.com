@@ -1,5 +1,6 @@
 import BriefWindow from "@/components/morning-brief/BriefWindow";
-import DaySchedule from "@/components/morning-brief/DaySchedule";
+import DaySchedule, { type AddEvent } from "@/components/morning-brief/DaySchedule";
+import MealPlan, { type SaveMeals } from "@/components/morning-brief/MealPlan";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
 import TrainingPlan from "@/components/morning-brief/TrainingPlan";
@@ -17,17 +18,21 @@ export default function BriefView({
   brief,
   stale,
   onSaveGoal,
+  onSaveMeals,
+  onAddEvent,
 }: {
   brief: Brief;
   stale?: boolean;
   onSaveGoal?: (goal: GoalRequest) => Promise<boolean>;
+  onSaveMeals?: SaveMeals;
+  onAddEvent?: AddEvent;
 }) {
   const dateLabel = new Date(`${brief.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  const { todos, weather, training, listening, words, ski } = brief;
+  const { todos, weather, training, meals, listening, words, ski } = brief;
 
   return (
     <>
@@ -45,7 +50,7 @@ export default function BriefView({
       <main className="brief">
         {brief.schedule && (
           <BriefWindow title="Today">
-            <DaySchedule items={brief.schedule} />
+            <DaySchedule items={brief.schedule} suggestions={brief.suggestions} date={brief.date} onAddEvent={onAddEvent} />
           </BriefWindow>
         )}
 
@@ -61,14 +66,18 @@ export default function BriefView({
             <p>{weather.details}</p>
             <p className="lead-line">{weather.plan}</p>
             <h3>Best time to train outside</h3>
-            <ul className="windows-list">
-              {weather.trainingWindows.map((window) => (
-                <li key={window.label} className={window.best ? "is-best" : ""}>
-                  <strong>{window.label}, {window.time}</strong>
-                  <span>{window.conditions}</span>
-                </li>
-              ))}
-            </ul>
+            {weather.trainingWindows.length > 0 ? (
+              <ul className="windows-list">
+                {weather.trainingWindows.map((window) => (
+                  <li key={window.label} className={window.best ? "is-best" : ""}>
+                    <strong>{window.label}, {window.time}</strong>
+                    <span>{window.conditions}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Your calendar fills the usual training times today.</p>
+            )}
           </BriefWindow>
         )}
 
@@ -92,22 +101,15 @@ export default function BriefView({
           </BriefWindow>
         )}
 
-        {brief.gamePlan && (
-          <BriefWindow title="Game Plan">
-            <ul className="plan-list">
-              {brief.gamePlan.map((item) => (
-                <li key={item.task}>
-                  <p><strong>{item.task}</strong> <span className="muted">({item.estimate})</span></p>
-                  <p>{item.why}</p>
-                </li>
-              ))}
-            </ul>
-          </BriefWindow>
-        )}
-
         {training && (
           <BriefWindow title="Training">
             <TrainingPlan training={training} onSaveGoal={onSaveGoal} />
+          </BriefWindow>
+        )}
+
+        {meals && (
+          <BriefWindow title="Meals">
+            <MealPlan meals={meals} onSave={onSaveMeals} />
           </BriefWindow>
         )}
 

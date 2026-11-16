@@ -50,48 +50,53 @@ def test_items_show_todays_blocks_as_work(monkeypatch):
         "receivedAt": NOW.isoformat(),
     }
     monkeypatch.setattr(work.store, "latest_pushed", lambda kind: saved if kind == "work" else None)
-    assert work.fetch(TODAY)["items"] == [
+    assert work.fetch(TODAY, NOW)["items"] == [
         {"title": "Work", "calendar": "work", "owner": "mine", "start": "09:00", "end": "10:00"},
         {"title": "Work", "calendar": "work", "owner": "mine", "start": "00:00", "end": "23:59", "allDay": True},
     ]
 
 
-def test_fetch_fails_before_anything_is_sent(monkeypatch):
+SATURDAY = date(2026, 11, 7)
+
+
+def test_fetch_uses_the_usual_hours_when_nothing_was_sent(monkeypatch):
     monkeypatch.setattr(work.store, "latest_pushed", lambda kind: None)
-    with pytest.raises(LookupError):
-        work.fetch(TODAY)
+    monkeypatch.delenv("WORK_HOURS", raising=False)
+    assert work.fetch(TODAY, NOW)["items"] == [
+        {"title": "Work", "calendar": "work", "owner": "mine", "start": "08:00", "end": "17:00", "usual": True}
+    ]
+    assert work.fetch(SATURDAY, NOW)["items"] == []
 
 
-def brief_with(received, schedule=None):
-    brief = {"sources": [{"name": "Work calendar", "state": "ok", "note": "Updated 4:30 AM"}]}
-    if schedule is not None:
-        brief["schedule"] = schedule
-    brief["work"] = {"items": [{"title": "Work", "calendar": "work", "owner": "mine", "start": "09:00", "end": "10:00"}], "receivedAt": received}
-    return brief
+def test_fetch_uses_the_usual_hours_when_the_sent_times_are_old(monkeypatch):
+    saved = {"events": [{"start": "2026-11-03T09:00:00-07:00", "end": "2026-11-03T10:00:00-07:00", "allDay": False}], "receivedAt": "2026-11-01T04:15:00-07:00"}
+    monkeypatch.setattr(work.store, "latest_pushed", lambda kind: saved)
+    monkeypatch.setenv("WORK_HOURS", "Mon-Thu,07:30-16:30")
+    assert work.fetch(TODAY, NOW)["items"][0]["start"] == "07:30"
+    assert work.fetch(date(2026, 11, 6), NOW)["items"] == []
+
+
+def test_bad_work_hours_fall_back_to_the_default(monkeypatch):
+    monkeypatch.setenv("WORK_HOURS", "weekdays 9 to 5")
+    assert work.usual_hours() == ({0, 1, 2, 3, 4}, "08:00", "17:00")
 
 
 def test_merge_adds_work_to_the_schedule_in_time_order():
     lunch = {"title": "Lunch", "calendar": "personal", "owner": "mine", "start": "12:00", "end": "13:00"}
     gym = {"title": "Gym", "calendar": "personal", "owner": "mine", "start": "06:00", "end": "07:00"}
-    brief = brief_with(NOW.isoformat(), [gym, lunch])
-    work.merge(brief, NOW)
+    brief = {"schedule": [gym, lunch], "work": {"items": [{"title": "Work", "calendar": "work", "owner": "mine", "start": "09:00", "end": "10:00"}]}}
+    work.merge(brief)
     assert [item["title"] for item in brief["schedule"]] == ["Gym", "Work", "Lunch"]
     assert "work" not in brief
 
 
 def test_merge_works_when_google_failed():
-    brief = brief_with(NOW.isoformat())
-    work.merge(brief, NOW)
+    brief = {"work": {"items": [{"title": "Work", "calendar": "work", "owner": "mine", "start": "09:00", "end": "10:00"}]}}
+    work.merge(brief)
     assert [item["title"] for item in brief["schedule"]] == ["Work"]
-
-
-def test_merge_flags_a_list_from_an_earlier_day():
-    brief = brief_with("2026-11-01T04:15:00-07:00", [])
-    work.merge(brief, NOW)
-    assert brief["sources"][-1] == {"name": "Work calendar", "state": "stale", "note": "Last received Nov 1"}
 
 
 def test_merge_does_nothing_when_work_failed():
     brief = {"schedule": [], "sources": []}
-    work.merge(brief, NOW)
+    work.merge(brief)
     assert brief == {"schedule": [], "sources": []}

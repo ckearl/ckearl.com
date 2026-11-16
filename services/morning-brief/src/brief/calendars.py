@@ -1,10 +1,13 @@
-"""Today's events from Google Calendar. Read-only: this never changes a calendar.
+"""Today's events from Google Calendar, and new events added from the page. The only change this
+ever makes is adding an event to the primary calendar when the page asks for one.
 
 Every calendar on the account is read, whether or not it's checked in the Google Calendar app.
 CALENDAR_OWNERS marks the ones that aren't mine, as comma-separated `id=hers`, `id=shared` or
 `id=skip`. It lives in .env so the IDs stay out of this public repo."""
 
+import json
 import os
+import re
 from datetime import date, datetime, time, timedelta
 
 import requests
@@ -123,3 +126,63 @@ def week(start_day: date, days: int = 7) -> dict[date, list[dict]]:
 
 def fetch(today: date) -> list[dict]:
     return build(events(today, 1), today)
+
+
+MAX_EVENT_TITLE = 120
+CLOCK = re.compile(r"([01]\d|2[0-3]):[0-5]\d")
+
+
+def parse_event(body: str, today: date) -> dict:
+    """{"title", "date": "YYYY-MM-DD", "start": "HH:MM", "end": "HH:MM"} or with "allDay": true instead of times."""
+    payload = json.loads(body)
+    if not isinstance(payload, dict):
+        raise ValueError("Expected an event object")
+    title = payload.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("The event needs a name")
+    try:
+        day = date.fromisoformat(str(payload.get("date")))
+    except ValueError:
+        raise ValueError("The event needs a date") from None
+    if not today - timedelta(days=1) <= day <= today + timedelta(days=366):
+        raise ValueError("Pick a date within the next year")
+    event = {"title": title.strip()[:MAX_EVENT_TITLE], "date": day.isoformat()}
+    if payload.get("allDay") is True:
+        return event | {"allDay": True}
+    start, end = payload.get("start"), payload.get("end")
+    if not (isinstance(start, str) and CLOCK.fullmatch(start) and isinstance(end, str) and CLOCK.fullmatch(end)):
+        raise ValueError("The event needs a start and end time")
+    if end <= start:
+        raise ValueError("The event has to end after it starts")
+    return event | {"start": start, "end": end}
+
+
+def google_event(event: dict) -> dict:
+    day = date.fromisoformat(event["date"])
+    if event.get("allDay"):
+        return {"summary": event["title"], "start": {"date": day.isoformat()}, "end": {"date": (day + timedelta(days=1)).isoformat()}}
+    zone = str(config.TIMEZONE)
+
+    def moment(clock: str) -> dict:
+        return {"dateTime": f"{day.isoformat()}T{clock}:00", "timeZone": zone}
+
+    return {"summary": event["title"], "start": moment(event["start"]), "end": moment(event["end"])}
+
+
+def create(event: dict) -> None:
+    """Adds the event to the primary calendar."""
+    response = requests.post(
+        f"{API_URL}/calendars/primary/events",
+        json=google_event(event),
+        headers={**HEADERS, "Authorization": f"Bearer {access_token()}"},
+        timeout=TIMEOUT,
+    )
+    response.raise_for_status()
+
+
+def as_item(event: dict) -> dict:
+    """The new event as a schedule row, for adding it to today's brief right away."""
+    item = {"title": event["title"], "calendar": "personal", "owner": "mine"}
+    if event.get("allDay"):
+        return item | {"start": "00:00", "end": "23:59", "allDay": True}
+    return item | {"start": event["start"], "end": event["end"]}

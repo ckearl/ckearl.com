@@ -15,17 +15,26 @@ An iPhone Shortcut sends the Reminders list to `POST /brief/todos` before the br
 Listening comes from the `spotify_stats` snapshot in S3. The ski report only appears in season
 when 8 or more inches is forecast for the Cottonwoods in the next three days.
 
-Calendar reads every calendar on the Google account with read-only access, skipping holidays
-and birthdays, whether or not it's checked in the Google Calendar app. `CALENDAR_OWNERS` in
-`.env` marks the calendars that are Senah's (`id=hers`), shared (`id=shared`) or left out
-(`id=skip`). Everything else counts as mine. The page can show mine, hers or both.
+Calendar reads every calendar on the Google account, skipping holidays and birthdays, whether
+or not it's checked in the Google Calendar app. `CALENDAR_OWNERS` in `.env` marks the calendars
+that are Senah's (`id=hers`), shared (`id=shared`) or left out (`id=skip`). Everything else
+counts as mine. The page can show mine, hers or both. It can also add an event to the primary
+calendar (`POST /brief/event`, with the page's login token), the only change it ever makes.
+To connect Google, create a Desktop OAuth client in a Google Cloud project whose consent screen
+is In production (test-mode tokens expire after 7 days), then run
+`python3 scripts/connect_google.py <downloaded client_secret file>`. Run it with no file to
+sign in again with the client already in `.env`.
 
-The work Outlook calendar comes from a second Shortcut, which sends today's events from the
-phone's calendar to `POST /brief/work` with the same key, as
-`{"events": [{"start", "end", "allDay"}]}` with ISO 8601 times. Only the times are kept, and
-the page shows each one as "Work". To connect it, create a Desktop OAuth client in a Google Cloud project
-whose consent screen is In production (test-mode tokens expire after 7 days), then run
-`python3 scripts/connect_google.py <downloaded client_secret file>`.
+The work Outlook calendar can't be read: the employer blocks phone sign-in and publishing. The
+brief blocks out the usual work hours from `WORK_HOURS` (`Mon-Fri,08:00-17:00`) instead. If real
+meeting times are ever sent to `POST /brief/work` (`{"events": [{"start", "end", "allDay"}]}`
+with ISO 8601 times and the Shortcut key), they're used while under a day old. Only times are
+kept, and the page shows each one as "Work".
+
+Claude suggests times for the day in the Today window: the workout, music practice, cooking and
+cleaning up dinner, 20 minutes of chores, reading, reminders that fit, and grocery runs and meal
+prep based on the meals written on the page (`POST /brief/meals`). Every suggestion is checked
+against my and shared events and dropped if it overlaps. Each one can be added to the calendar.
 
 Training plans each week from the event saved on the page (`POST /brief/goal`, with the page's
 login token), sports on my calendars, and the last month of Garmin runs, sleep and HRV through

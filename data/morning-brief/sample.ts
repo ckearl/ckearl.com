@@ -148,10 +148,20 @@ export const sampleBrief: Brief = {
       { title: "Hang the shelf" },
     ],
   },
-  gamePlan: [
-    { task: "Replace the furnace filter", estimate: "10 min", why: "Quick, and the first real cold nights are this week." },
-    { task: "Blow out the sprinklers", estimate: "45 min", why: "Dry today, and overnight lows drop below 30 by Thursday." },
-    { task: "Book the car inspection", estimate: "5 min", why: "You have a gap at 11:00." },
+  suggestions: [
+    { start: "06:15", end: "06:30", title: "Chores", kind: "chores", why: "Twenty minutes before work, while the house is quiet." },
+    { start: "11:05", end: "11:15", title: "Book the car inspection", kind: "todo", why: "Due today, and it fits the gap before lunch." },
+    { start: "17:15", end: "18:00", title: "Easy run, 5 miles", kind: "workout", why: "The warmest free hour, and air quality is still good." },
+    { start: "21:10", end: "21:40", title: "Read", kind: "reading", why: "Winds down after basketball." },
+  ],
+  meals: [
+    { date: "2026-11-02", day: "Mon", lunch: "Leftover curry", dinner: "Tacos" },
+    { date: "2026-11-03", day: "Tue", dinner: "Kimchi fried rice" },
+    { date: "2026-11-04", day: "Wed", lunch: "Prepped grain bowls", dinner: "Sheet-pan chicken" },
+    { date: "2026-11-05", day: "Thu" },
+    { date: "2026-11-06", day: "Fri", dinner: "Pizza night" },
+    { date: "2026-11-07", day: "Sat" },
+    { date: "2026-11-08", day: "Sun", dinner: "Soup" },
   ],
   training: {
     focus: "Build long-distance endurance",

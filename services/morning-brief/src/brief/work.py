@@ -1,8 +1,11 @@
-"""The work Outlook calendar. An iPhone Shortcut reads today's events from the phone's calendar
-and sends them each morning, so nothing needs access to the work account. Only the times are
-kept: the page shows each one as "Work", and titles never reach this backend or Claude."""
+"""The work day. The employer blocks every way of reading the Outlook calendar, so the brief
+uses the usual work hours from WORK_HOURS, such as "Mon-Fri,08:00-17:00". If an iPhone Shortcut
+or flow ever sends real meeting times, those are used instead while they're fresh. Only times are
+kept: the page shows each block as "Work", and titles never reach this backend or Claude."""
 
 import json
+import os
+import re
 from datetime import date, datetime, timedelta
 
 from brief import calendars, config, store
@@ -10,6 +13,25 @@ from brief import calendars, config, store
 MAX_EVENTS = 50
 MAX_AGE = timedelta(hours=24)
 TRUE_TEXT = {"yes", "true", "1"}
+DEFAULT_HOURS = "Mon-Fri,08:00-17:00"
+DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def usual_hours() -> tuple[set[int], str, str]:
+    """The workdays (Monday is 0) and the start and end of the work day."""
+    text = os.environ.get("WORK_HOURS") or DEFAULT_HOURS
+    match = re.fullmatch(r"\s*(\w{3})-(\w{3})[\s,]+(\d\d:\d\d)-(\d\d:\d\d)\s*", text)
+    if not match or match[1].lower() not in DAY_NAMES or match[2].lower() not in DAY_NAMES or match[3] >= match[4]:
+        match = re.fullmatch(r"(\w{3})-(\w{3}),(\d\d:\d\d)-(\d\d:\d\d)", DEFAULT_HOURS)
+    first, last = DAY_NAMES.index(match[1].lower()), DAY_NAMES.index(match[2].lower())
+    return set(range(first, last + 1)), match[3], match[4]
+
+
+def usual_item(today: date) -> dict | None:
+    days, start, end = usual_hours()
+    if today.weekday() not in days:
+        return None
+    return {"title": "Work", "calendar": "work", "owner": "mine", "start": start, "end": end, "usual": True}
 
 
 def moment(value) -> str | None:
@@ -54,25 +76,17 @@ def to_item(event: dict, today: date) -> dict | None:
     return calendars.to_item(google_shaped, today) | {"calendar": "work"}
 
 
-def fetch(today: date) -> dict:
+def fetch(today: date, now: datetime) -> dict:
+    """Sent meeting times while they're under a day old, otherwise the usual work hours."""
     saved = store.latest_pushed("work")
-    if saved is None:
-        raise LookupError("No work events received yet")
-    items = [item for item in (to_item(event, today) for event in saved["events"]) if item]
-    return {"items": items, "receivedAt": saved["receivedAt"]}
+    if saved and now - datetime.fromisoformat(saved["receivedAt"]) <= MAX_AGE:
+        return {"items": [item for item in (to_item(event, today) for event in saved["events"]) if item]}
+    usual = usual_item(today)
+    return {"items": [usual] if usual else []}
 
 
-def merge(brief: dict, now: datetime) -> None:
-    """Folds the work blocks into the schedule, and marks the source stale if today's weren't sent."""
+def merge(brief: dict) -> None:
+    """Folds the work blocks into the schedule."""
     saved = brief.pop("work", None)
-    if saved is None:
-        return
-    received = datetime.fromisoformat(saved["receivedAt"]).astimezone(config.TIMEZONE)
-    if now - received > MAX_AGE:
-        brief["sources"][-1] = {
-            "name": "Work calendar",
-            "state": "stale",
-            "note": f"Last received {received.strftime('%b')} {received.day}",
-        }
-        return
-    brief["schedule"] = calendars.order(brief.get("schedule", []) + saved["items"])
+    if saved:
+        brief["schedule"] = calendars.order(brief.get("schedule", []) + saved["items"])

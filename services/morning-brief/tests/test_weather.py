@@ -20,6 +20,36 @@ def test_wind_uses_the_top_of_a_range():
     assert weather.wind_mph("5 to 15 mph") == 15
 
 
+SATURDAY = date(2026, 11, 7)
+
+
+def test_weekends_use_daytime_slots(monkeypatch):
+    monkeypatch.delenv("WORK_HOURS", raising=False)
+    hours = [{**hour(clock), "startTime": f"2026-11-07T{clock:02d}:00:00-07:00"} for clock in (8, 12, 16, 17)]
+    windows = weather.training_windows(hours, {}, SATURDAY)
+    assert [window["label"] for window in windows] == ["Morning", "Midday", "Afternoon"]
+    assert [window["label"] for window in windows if window.get("best")] == ["Morning"]
+    assert windows[0]["time"] == "8:00–9:00 AM"
+
+
+def test_after_work_follows_the_work_hours(monkeypatch):
+    monkeypatch.setenv("WORK_HOURS", "Mon-Fri,07:00-15:30")
+    windows = weather.training_windows([hour(6), hour(15), hour(20)], {}, TODAY)
+    after = next(window for window in windows if window["label"] == "After work")
+    assert (after["start"], after["time"]) == ("15:45", "3:45–4:45 PM")
+
+
+def test_skips_a_slot_his_calendar_fills_but_not_hers(monkeypatch):
+    monkeypatch.delenv("WORK_HOURS", raising=False)
+    schedule = [
+        {"title": "Soccer", "owner": "mine", "start": "17:00", "end": "18:30"},
+        {"title": "Her class", "owner": "hers", "start": "06:00", "end": "07:00"},
+        {"title": "Birthday", "owner": "shared", "start": "00:00", "end": "23:59", "allDay": True},
+    ]
+    windows = weather.training_windows([hour(6), hour(17), hour(20)], {}, TODAY, schedule)
+    assert [window["label"] for window in windows] == ["Early morning", "Night"]
+
+
 def test_prefers_after_work_when_slots_tie():
     windows = weather.training_windows([hour(6), hour(17), hour(20)], {}, TODAY)
     assert [window["label"] for window in windows if window.get("best")] == ["After work"]
