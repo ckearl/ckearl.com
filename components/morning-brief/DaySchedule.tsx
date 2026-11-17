@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import type { NewEvent, Owner, ScheduleItem, Suggestion, TravelMode } from "@/lib/morning-brief/types";
+import type {
+  NewEvent,
+  Owner,
+  Replan,
+  ScheduleItem,
+  Suggestion,
+  SuggestionMark,
+  SuggestionOutcome,
+  TravelMode,
+} from "@/lib/morning-brief/types";
 
 export type AddEvent = (event: NewEvent) => Promise<void>;
+export type MarkSuggestion = (mark: SuggestionMark) => Promise<void>;
+export type ReplanDay = () => Promise<void>;
+
+// Matches the backend: a replan still "running" after this long has failed.
+const REPLAN_LIMIT_MS = 4 * 60 * 1000;
 
 type View = "both" | "mine" | "hers";
 
@@ -93,38 +107,47 @@ function Row({ item }: { item: ScheduleItem }) {
   );
 }
 
-// A suggested time is one line. Tapping it shows the button that adds it to the calendar.
+const OUTCOME_LABELS: Record<SuggestionOutcome, string> = { done: "Done", skipped: "Skipped" };
+
+// A suggested time is one line. Tapping it shows buttons to add it to the calendar, or to mark it
+// done or skipped, which shapes later plans. A marked one can be taken back.
 function SuggestionRow({
   item,
   date,
   open,
   onToggle,
   onAdd,
+  onMark,
 }: {
   item: Suggestion;
   date: string;
   open: boolean;
   onToggle: () => void;
   onAdd?: AddEvent;
+  onMark?: MarkSuggestion;
 }) {
-  const [adding, setAdding] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function add() {
-    if (!onAdd) return;
-    setAdding(true);
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
     setError("");
     try {
-      // Once added, the real event takes this row's place.
-      await onAdd({ title: item.title, date, start: item.start, end: item.end });
+      await action();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "It didn't save.");
-      setAdding(false);
+    } finally {
+      setBusy(false);
     }
   }
 
+  // Once added, the real event takes this row's place.
+  const add = () => run(() => onAdd!({ title: item.title, date, start: item.start, end: item.end }));
+  const mark = (outcome: SuggestionMark["outcome"]) =>
+    run(() => onMark!({ date, kind: item.kind, title: item.title, start: item.start, outcome }));
+
   return (
-    <li className="schedule-item is-suggested">
+    <li className={`schedule-item is-suggested ${item.outcome ? `is-${item.outcome}` : ""}`}>
       <button type="button" className="suggestion-toggle" aria-expanded={open} onClick={onToggle}>
         <span className="schedule-time">
           {formatTime(toMinutes(item.start))}
@@ -133,12 +156,29 @@ function SuggestionRow({
         <span className="schedule-title">
           <span className="visually-hidden">Suggested: </span>
           {item.title}
+          {item.outcome && <span className="suggestion-outcome">{OUTCOME_LABELS[item.outcome]}</span>}
         </span>
       </button>
       {open && (
-        <button type="button" className="add-button" disabled={!onAdd || adding} onClick={add}>
-          {adding ? "Adding…" : "Add"}
-        </button>
+        <div className="suggestion-actions">
+          {item.outcome ? (
+            <button type="button" disabled={!onMark || busy} onClick={() => mark("clear")}>
+              Undo
+            </button>
+          ) : (
+            <>
+              <button type="button" className="is-primary" disabled={!onAdd || busy} onClick={add}>
+                Add
+              </button>
+              <button type="button" disabled={!onMark || busy} onClick={() => mark("done")}>
+                Done
+              </button>
+              <button type="button" disabled={!onMark || busy} onClick={() => mark("skipped")}>
+                Skip
+              </button>
+            </>
+          )}
+        </div>
       )}
       {error && (
         <p className="gate-error suggestion-error" role="alert">
@@ -146,6 +186,43 @@ function SuggestionRow({
         </p>
       )}
     </li>
+  );
+}
+
+// Redoes the rest of today's suggestions around the calendar as it is now. It runs in the
+// background, so the page shows that it's working until the new plan arrives.
+function ReplanButton({ replan, onReplan }: { replan?: Replan; onReplan?: ReplanDay }) {
+  const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
+  const running = replan?.state === "running" && Date.now() - Date.parse(replan.at) < REPLAN_LIMIT_MS;
+
+  async function start() {
+    if (!onReplan) return;
+    setStarting(true);
+    setError("");
+    try {
+      await onReplan();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "The replan didn't start.");
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="text-button replan-button" disabled={!onReplan || running || starting} onClick={start}>
+        {running || starting ? "Replanning…" : "Replan from now"}
+      </button>
+      <span className="replan-status" role="status">
+        {running ? "About a minute." : replan?.state === "failed" ? "The last replan didn't finish. Try again." : ""}
+      </span>
+      {error && (
+        <p className="gate-error" role="alert">
+          {error}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -240,12 +317,18 @@ export default function DaySchedule({
   items,
   suggestions = [],
   date,
+  replan,
   onAddEvent,
+  onMarkSuggestion,
+  onReplan,
 }: {
   items: ScheduleItem[];
   suggestions?: Suggestion[];
   date: string;
+  replan?: Replan;
   onAddEvent?: AddEvent;
+  onMarkSuggestion?: MarkSuggestion;
+  onReplan?: ReplanDay;
 }) {
   const [view, setView] = useState<View>("both");
   const [openSuggestion, setOpenSuggestion] = useState<string | null>(null);
@@ -298,16 +381,21 @@ export default function DaySchedule({
           ))}
         </div>
       )}
-      {suggestions.length > 0 && view !== "hers" && (
-        <label className="suggestions-switch">
-          <input
-            type="checkbox"
-            role="switch"
-            checked={showSuggestions}
-            onChange={(event) => toggleSuggestions(event.target.checked)}
-          />
-          Suggested times
-        </label>
+      {view !== "hers" && (
+        <div className="suggestion-controls">
+          {suggestions.length > 0 && (
+            <label className="suggestions-switch">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={showSuggestions}
+                onChange={(event) => toggleSuggestions(event.target.checked)}
+              />
+              Suggested times
+            </label>
+          )}
+          <ReplanButton replan={replan} onReplan={onReplan} />
+        </div>
       )}
       {rows.length === 0 ? (
         <p>Nothing on the calendar today.</p>
@@ -327,6 +415,7 @@ export default function DaySchedule({
                   setOpenSuggestion((current) => (current === key ? null : key));
                 }}
                 onAdd={onAddEvent}
+                onMark={onMarkSuggestion}
               />
             ),
           )}

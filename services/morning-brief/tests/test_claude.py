@@ -9,6 +9,11 @@ from brief import claude
 TODAY = date(2026, 11, 2)
 
 
+@pytest.fixture(autouse=True)
+def no_habits(monkeypatch):
+    monkeypatch.setattr(claude.feedback, "habits", lambda today: {})
+
+
 def sample_brief():
     return {
         "todos": {"list": "to do", "items": [{"title": "Oil change", "due": "2026-11-02"}, {"title": "Buy stamps"}]},
@@ -243,3 +248,21 @@ def test_merge_leaves_the_brief_alone_when_claude_failed():
     claude.merge(brief)
 
     assert brief == sample_brief()
+
+
+def test_replan_plans_only_from_now_and_keeps_marked_ones(monkeypatch):
+    answer = {"day_plan": [block("music", "Piano", "14:00", 20), block("reading", "Read", "19:00", 30), block("chores", "Chores", "18:00", 20)]}
+    fake = FakeClient(reply(json.dumps(answer)))
+    monkeypatch.setattr(claude, "client", lambda: fake)
+    done = {"start": "18:00", "end": "18:20", "title": "Dishes", "kind": "chores", "outcome": "done"}
+    brief = {**sample_brief(), "schedule": [], "suggestions": [done, {"start": "20:00", "end": "20:30", "title": "Old", "kind": "reading"}]}
+    now = claude.datetime(2026, 11, 2, 16, 0)
+
+    plan = claude.replan(brief, now)
+
+    assert [(item["title"], item["start"]) for item in plan] == [("Dishes", "18:00"), ("Read", "19:00")]
+    data = json.loads(fake.sent["messages"][0]["content"].removeprefix("<data>\n").removesuffix("\n</data>"))
+    assert data["now"] == "16:00"
+    assert data["finished"] == [{"title": "Dishes", "start": "18:00", "outcome": "done"}]
+    assert "stories" not in data
+    assert fake.sent["system"] == claude.REPLAN_SYSTEM

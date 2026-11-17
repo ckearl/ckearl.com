@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from brief import calendars, claude, config, listening, meals, news, routine, scores, ski, teams, todos, training, weather, words, work
@@ -19,6 +19,14 @@ def collect(name: str, label: str, fetch: Callable[[], Any], brief: dict, stamp:
     except Exception as error:
         logger.exception("%s failed", label)
         brief["sources"].append({"name": label, "state": "failed", "note": f"Unavailable ({type(error).__name__})"})
+
+
+def fresh_schedule(today: date, now: datetime) -> list[dict]:
+    """Today's calendar as it is now, with work hours and routines, for a replan."""
+    brief = {"schedule": calendars.fetch(today), "work": work.fetch(today, now)}
+    work.merge(brief)
+    routine.merge(brief, today)
+    return brief["schedule"]
 
 
 def build(now: datetime | None = None) -> dict:

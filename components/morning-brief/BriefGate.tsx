@@ -4,11 +4,26 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import BriefView from "@/components/morning-brief/BriefView";
 import Window from "@/components/new-design/Window";
 import { sampleBrief } from "@/data/morning-brief/sample";
-import type { Brief, DoneRequest, GoalRequest, MealDay, MealsRequest, NewEvent, ScheduleItem, Training } from "@/lib/morning-brief/types";
+import type {
+  Brief,
+  DoneRequest,
+  GoalRequest,
+  MealDay,
+  MealsRequest,
+  NewEvent,
+  Replan,
+  ScheduleItem,
+  Suggestion,
+  SuggestionMark,
+  Training,
+} from "@/lib/morning-brief/types";
 
 const API_URL = process.env.NEXT_PUBLIC_BRIEF_API;
 const TOKEN_KEY = "morning-brief-token";
 const OLD_PASSWORD_KEY = "morning-brief-password";
+// While a replan runs, the page checks for the new plan this often, for up to five minutes.
+const REPLAN_POLL_MS = 4000;
+const REPLAN_POLLS = 75;
 
 type State = "checking" | "locked" | "ready";
 
@@ -63,6 +78,30 @@ export default function BriefGate() {
     }
   };
 
+  // A replan runs in the background, so check back until the brief says it's finished. This also
+  // picks up a replan that was already running when the page opened.
+  const replanRunning = brief?.replan?.state === "running";
+  useEffect(() => {
+    if (!API_URL || !replanRunning) return;
+    let polls = 0;
+    const timer = window.setInterval(async () => {
+      polls += 1;
+      if (polls > REPLAN_POLLS) window.clearInterval(timer);
+      try {
+        const response = await fetch(`${API_URL}/brief/today`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` },
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const fresh: Brief = await response.json();
+        if (fresh.replan?.state !== "running") setBrief(fresh);
+      } catch {
+        // Try again on the next tick.
+      }
+    }, REPLAN_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [replanRunning]);
+
   useEffect(() => {
     if (!API_URL) return;
     localStorage.removeItem(OLD_PASSWORD_KEY);
@@ -97,6 +136,28 @@ export default function BriefGate() {
     if (result.training) setBrief((current) => current && { ...current, training: result.training });
   };
 
+  const replan = async () => {
+    const result = await post<{ replan: Replan }>("/brief/replan", {}, "The replan didn't start.");
+    setBrief((current) => current && { ...current, replan: result.replan });
+  };
+
+  // Marks a suggestion done or skipped. A done workout also comes back checked off in Training.
+  const markSuggestion = async (mark: SuggestionMark) => {
+    const result = await post<{ suggestions?: Suggestion[]; training?: Training | null }>(
+      "/brief/suggestion",
+      mark,
+      "That didn't save.",
+    );
+    setBrief(
+      (current) =>
+        current && {
+          ...current,
+          ...(result.suggestions ? { suggestions: result.suggestions } : {}),
+          ...(result.training ? { training: result.training } : {}),
+        },
+    );
+  };
+
   const saveMeals = async (meals: MealsRequest) => {
     const result = await post<{ meals: MealDay[] }>("/brief/meals", meals, "The meals didn't save.");
     setBrief((current) => current && { ...current, meals: result.meals });
@@ -128,6 +189,8 @@ export default function BriefGate() {
         onSaveMeals={API_URL ? saveMeals : undefined}
         onAddEvent={API_URL ? addEvent : undefined}
         onMarkDone={API_URL ? markDone : undefined}
+        onMarkSuggestion={API_URL ? markSuggestion : undefined}
+        onReplan={API_URL ? replan : undefined}
       />
     );
   }

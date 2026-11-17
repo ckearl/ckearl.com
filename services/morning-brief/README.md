@@ -38,7 +38,11 @@ Claude suggests times for the day in the Today window: each workout on its own, 
 cooking and cleaning up dinner, 20 minutes of chores, reading, reminders that fit, and grocery runs
 and meal prep based on the meals written on the page (`POST /brief/meals`). Every suggestion is
 checked against my and shared events and dropped if it overlaps. Gym and pool workouts get 15
-minutes of travel each way. Tapping a suggestion shows a button to add it to the calendar.
+minutes of travel each way. Tapping a suggestion shows buttons to add it to the calendar or mark
+it done or skipped (`POST /brief/suggestion`). The last four weeks of marks go to Claude, so the
+plan leans toward when things get done. "Replan from now" (`POST /brief/replan`) starts a
+background function that rereads the calendar and redoes the rest of the day's suggestions,
+keeping the marked ones; the page checks back until it's finished.
 
 Training plans each week from the event saved on the page (`POST /brief/goal`, with the page's
 login token), sports on my calendars, and the last month of Garmin runs, sleep and HRV through

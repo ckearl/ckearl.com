@@ -1,4 +1,4 @@
-import DaySchedule, { type AddEvent } from "@/components/morning-brief/DaySchedule";
+import DaySchedule, { type AddEvent, type MarkSuggestion, type ReplanDay } from "@/components/morning-brief/DaySchedule";
 import MealPlan, { type SaveMeals } from "@/components/morning-brief/MealPlan";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
@@ -15,6 +15,8 @@ export default function BriefView({
   onSaveMeals,
   onAddEvent,
   onMarkDone,
+  onMarkSuggestion,
+  onReplan,
 }: {
   brief: Brief;
   stale?: boolean;
@@ -22,6 +24,8 @@ export default function BriefView({
   onSaveMeals?: SaveMeals;
   onAddEvent?: AddEvent;
   onMarkDone?: MarkDone;
+  onMarkSuggestion?: MarkSuggestion;
+  onReplan?: ReplanDay;
 }) {
   const dateLabel = new Date(`${brief.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -41,7 +45,10 @@ export default function BriefView({
             items={brief.schedule}
             suggestions={brief.suggestions}
             date={brief.date}
+            replan={brief.replan}
             onAddEvent={onAddEvent}
+            onMarkSuggestion={onMarkSuggestion}
+            onReplan={onReplan}
           />
         </>
       ),

@@ -427,28 +427,93 @@ a.score-card:focus-visible {
   font-weight: 400;
 }
 
-.add-button {
-  margin-right: 0.5rem;
-  padding: 0.3rem 0.9rem;
-  font: inherit;
-  font-weight: 700;
-  color: var(--paper);
-  background: var(--slate);
-  border: 1px solid var(--slate);
-  cursor: pointer;
-  animation: add-in 160ms ease-out;
+.is-suggested {
+  row-gap: 0.4rem;
 }
 
-.add-button:disabled {
-  opacity: 0.7;
+.suggestion-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding-right: 0.5rem;
+  animation: actions-in 160ms ease-out;
+}
+
+.suggestion-actions button {
+  padding: 0.3rem 0.85rem;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate);
+  background: var(--tan-light);
+  border: 1px solid var(--slate);
+  cursor: pointer;
+}
+
+.suggestion-actions .is-primary {
+  color: var(--paper);
+  background: var(--slate);
+}
+
+.suggestion-actions button:disabled {
+  opacity: 0.6;
   cursor: default;
 }
 
-@keyframes add-in {
+@keyframes actions-in {
   from {
     opacity: 0;
-    transform: translateX(0.4rem);
+    transform: translateY(-0.25rem);
   }
+}
+
+.is-suggested.is-done .schedule-title,
+.is-suggested.is-skipped .schedule-title {
+  color: var(--slate-mid);
+}
+
+.is-suggested.is-skipped .schedule-title {
+  text-decoration: line-through;
+}
+
+.suggestion-outcome {
+  margin-left: 0.5rem;
+  padding: 0 0.35rem;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid currentColor;
+}
+
+.suggestion-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.suggestion-controls .suggestions-switch {
+  margin: 0;
+}
+
+.replan-button {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.replan-button:disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+.replan-status {
+  font-size: 14px;
+  color: var(--slate-mid);
+}
+
+.replan-status:empty {
+  display: none;
 }
 
 .suggestion-error {
@@ -490,7 +555,7 @@ a.score-card:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .expander::details-content,
-  .add-button {
+  .suggestion-actions {
     transition: none;
     animation: none;
   }

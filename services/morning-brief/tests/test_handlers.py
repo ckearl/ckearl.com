@@ -323,3 +323,67 @@ def test_done_rejects_a_bad_mark(monkeypatch):
     monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: pytest.fail("saved"))
     body = json.dumps({"date": todays_date().isoformat(), "kind": "nap", "done": True})
     assert handlers.mark_done(authed(monkeypatch, body), None)["statusCode"] == 400
+
+
+def test_replan_request_marks_it_running_and_starts_the_worker(monkeypatch):
+    stored, invoked = [], []
+    monkeypatch.setenv("REPLAN_FUNCTION", "worker")
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": todays_date().isoformat(), "sources": []})
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+
+    class Lambda:
+        def invoke(self, **request):
+            invoked.append(request)
+
+    monkeypatch.setattr(handlers.boto3, "client", lambda name: Lambda())
+    response = handlers.request_replan(authed(monkeypatch, "{}"), None)
+    assert response["statusCode"] == 202
+    assert stored[0]["replan"]["state"] == "running"
+    assert invoked == [{"FunctionName": "worker", "InvocationType": "Event", "Payload": b"{}"}]
+
+
+def test_replan_request_doesnt_start_a_second_one(monkeypatch):
+    running = {"state": "running", "at": handlers.datetime.now(handlers.config.TIMEZONE).isoformat()}
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": todays_date().isoformat(), "replan": running})
+    monkeypatch.setattr(handlers.store, "save", lambda brief: pytest.fail("saved"))
+    monkeypatch.setattr(handlers.boto3, "client", lambda name: pytest.fail("invoked"))
+    assert handlers.request_replan(authed(monkeypatch, "{}"), None)["statusCode"] == 202
+
+
+def test_replan_worker_saves_new_suggestions_or_a_failure(monkeypatch):
+    stored = []
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": todays_date().isoformat(), "schedule": [], "replan": {"state": "running"}})
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    monkeypatch.setattr(handlers.assemble, "fresh_schedule", lambda today, now: [{"title": "New"}])
+    monkeypatch.setattr(handlers.claude, "replan", lambda brief, now: [{"title": "Read", "schedule": brief["schedule"]}])
+    handlers.replan({}, None)
+    assert stored[0]["replan"]["state"] == "done"
+    assert stored[0]["suggestions"] == [{"title": "Read", "schedule": [{"title": "New"}]}]
+
+    def fail(brief, now):
+        raise RuntimeError("down")
+
+    monkeypatch.setattr(handlers.claude, "replan", fail)
+    handlers.replan({}, None)
+    assert stored[1]["replan"]["state"] == "failed"
+
+
+def test_marking_a_workout_suggestion_done_checks_it_off(monkeypatch):
+    stored, marks = [], []
+    today = todays_date().isoformat()
+    brief = {
+        "date": today,
+        "suggestions": [{"title": "Strength, push day", "start": "17:30", "end": "18:45", "kind": "workout"}],
+        "training": {"today": [{"kind": "strength", "title": "Strength, push day", "detail": ""}]},
+    }
+    monkeypatch.setattr(handlers.store, "latest", lambda: brief)
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    monkeypatch.setattr(handlers.feedback, "save", lambda entry, today: None)
+    monkeypatch.setattr(handlers.training, "save_mark", lambda mark, today: marks.append(mark))
+    monkeypatch.setattr(handlers.training, "fetch", lambda now: {"recounted": True})
+    body = json.dumps({"date": today, "kind": "workout", "title": "Strength, push day", "start": "17:30", "outcome": "done"})
+    response = handlers.mark_suggestion(authed(monkeypatch, body), None)
+    assert response["statusCode"] == 200
+    assert json.loads(response["body"])["suggestions"][0]["outcome"] == "done"
+    assert marks == [{"date": today, "kind": "strength", "done": True}]
+    assert stored[0]["training"] == {"recounted": True}

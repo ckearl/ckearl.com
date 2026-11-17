@@ -260,6 +260,81 @@ Resources:
             Path: /brief/done
             Method: POST
 
+  SuggestionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-suggestion
+      Handler: handlers.mark_suggestion
+      # API Gateway stops waiting at 29 seconds.
+      Timeout: 28
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
+          CALENDAR_OWNERS: !Ref CalendarOwners
+          GARMIN_API_KEY: !Ref GarminApiKey
+          TRAINING_EASY_PACE: !Ref TrainingEasyPace
+          TRAINING_BASE_MILES: !Ref TrainingBaseMiles
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
+      Events:
+        Suggestion:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/suggestion
+            Method: POST
+
+  ReplanRequestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-replan-request
+      Handler: handlers.request_replan
+      Timeout: 15
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          REPLAN_FUNCTION: !Ref ReplanFunction
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
+        - LambdaInvokePolicy: { FunctionName: !Ref ReplanFunction }
+      Events:
+        Replan:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/replan
+            Method: POST
+
+  # Runs the replan in the background; only ReplanRequestFunction calls it.
+  ReplanFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-replan
+      Handler: handlers.replan
+      Timeout: 180
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      MemorySize: 512
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
+          CALENDAR_OWNERS: !Ref CalendarOwners
+          WORK_HOURS: !Ref WorkHours
+          MORNING_HELP: !Ref MorningHelp
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
+
   MealsFunction:
     Type: AWS::Serverless::Function
     Properties:

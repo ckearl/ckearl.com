@@ -39,8 +39,29 @@ export type TrainingWindow = {
 
 export type SuggestionKind = "todo" | "workout" | "music" | "dinner" | "chores" | "reading" | "groceries" | "meal_prep";
 
+export type SuggestionOutcome = "done" | "skipped";
+
 // A time Claude suggests for something, checked against the calendar so it never overlaps an event.
-export type Suggestion = { start: string; end: string; title: string; kind: SuggestionKind; why?: string };
+export type Suggestion = {
+  start: string;
+  end: string;
+  title: string;
+  kind: SuggestionKind;
+  why?: string; // only on older briefs
+  outcome?: SuggestionOutcome; // marked on the page
+};
+
+// What marking a suggestion sends. "clear" takes the mark back.
+export type SuggestionMark = {
+  date: string;
+  kind: SuggestionKind;
+  title: string;
+  start: string;
+  outcome: SuggestionOutcome | "clear";
+};
+
+// A replan of the rest of the day, run in the background after the button is pressed.
+export type Replan = { state: "running" | "done" | "failed"; at: string };
 
 export type MealDay = { date: string; day: string; lunch?: string; dinner?: string };
 
@@ -108,6 +129,7 @@ export type Brief = {
     items: { title: string; due?: string; notes?: string }[]; // due is "YYYY-MM-DD"
   };
   suggestions?: Suggestion[];
+  replan?: Replan;
   meals?: MealDay[];
   training?: Training;
   teams?: { team: Team; update: string; next: string }[];

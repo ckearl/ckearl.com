@@ -150,7 +150,7 @@ export const sampleBrief: Brief = {
     ],
   },
   suggestions: [
-    { start: "06:15", end: "06:30", title: "Calisthenics, morning", kind: "workout" },
+    { start: "06:15", end: "06:30", title: "Calisthenics, morning", kind: "workout", outcome: "done" },
     { start: "11:05", end: "11:20", title: "Book the car inspection", kind: "todo" },
     { start: "17:15", end: "18:00", title: "Easy run, 5 miles", kind: "workout" },
     { start: "21:10", end: "21:40", title: "Read", kind: "reading" },

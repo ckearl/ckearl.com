@@ -1,11 +1,12 @@
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
+import boto3
 import requests
 
-from brief import assemble, auth, calendars, config, meals, store, todos, training, work
+from brief import assemble, auth, calendars, claude, config, feedback, meals, store, todos, training, work
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -182,3 +183,77 @@ def add_event(event, _context):
         brief["schedule"] = calendars.order(brief.get("schedule", []) + [item])
         store.save(brief)
     return respond(event, 200, {"event": new_event, "item": item if brief is not None else None})
+
+
+# A replan that hasn't finished in this long is treated as failed, so the button works again.
+REPLAN_LIMIT = timedelta(minutes=4)
+
+
+def request_replan(event, _context):
+    """Starts a replan of the rest of today. Claude takes longer than the API waits, so a second
+    function does the work and the page checks back until the brief says it's done."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    brief = todays_brief(now)
+    if brief is None:
+        return respond(event, 409, {"error": "Today's brief isn't ready yet."})
+    running = brief.get("replan") or {}
+    if running.get("state") == "running" and now - datetime.fromisoformat(running["at"]) < REPLAN_LIMIT:
+        return respond(event, 202, {"replan": running})
+    brief["replan"] = {"state": "running", "at": now.isoformat()}
+    store.save(brief)
+    boto3.client("lambda").invoke(FunctionName=os.environ["REPLAN_FUNCTION"], InvocationType="Event", Payload=b"{}")
+    return respond(event, 202, {"replan": brief["replan"]})
+
+
+def replan(_event, _context):
+    """Rebuilds today's suggestions from now on, around the calendar as it is now."""
+    now = datetime.now(config.TIMEZONE)
+    brief = todays_brief(now)
+    if brief is None:
+        return
+    try:
+        schedule = assemble.fresh_schedule(now.date(), now)
+    except Exception:
+        logging.exception("Reading the calendar failed, so the replan uses this morning's")
+        schedule = brief.get("schedule") or []
+    try:
+        suggestions = claude.replan({**brief, "schedule": schedule}, now)
+        result = {"schedule": schedule, "suggestions": suggestions, "replan": {"state": "done", "at": now.isoformat()}}
+    except Exception:
+        logging.exception("Replanning failed")
+        result = {"replan": {"state": "failed", "at": now.isoformat()}}
+    # Read again so a change saved meanwhile, such as a check mark, isn't lost.
+    latest = todays_brief(now) or brief
+    latest.update(result)
+    store.save(latest)
+
+
+def mark_suggestion(event, _context):
+    """Marks one of today's suggestions done or skipped, or clears the mark. A done workout is also
+    checked off in Training."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    try:
+        entry = feedback.parse(event.get("body") or "", now.date())
+    except ValueError as error:
+        return respond(event, 400, {"error": str(error)})
+    feedback.save(entry, now.date())
+    brief = todays_brief(now)
+    if brief is None:
+        return respond(event, 200, {"entry": entry})
+    brief["suggestions"] = feedback.apply(brief.get("suggestions") or [], entry)
+    workout = next(
+        (item for item in (brief.get("training") or {}).get("today", []) if item["title"] == entry["title"] and item.get("kind")),
+        None,
+    )
+    if entry["kind"] == "workout" and workout and entry["outcome"] != "skipped":
+        training.save_mark({"date": entry["date"], "kind": workout["kind"], "done": entry["outcome"] == "done"}, now.date())
+        try:
+            brief["training"] = training.fetch(now)
+        except Exception:
+            logging.exception("Recounting failed")
+    store.save(brief)
+    return respond(event, 200, {"entry": entry, "suggestions": brief["suggestions"], "training": brief.get("training")})
