@@ -10,7 +10,9 @@ The page posts the password to `POST /brief/session` for a token that lasts 30 d
 that token to `GET /brief/today`. Changing `BRIEF_TOKEN_SECRET` signs everyone out.
 
 An iPhone Shortcut sends the Reminders list to `POST /brief/todos` before the brief runs, as
-`{"items": [{"title", "due", "notes"}]}` with its own key, which can do nothing else.
+`{"items": [{"title", "due", "notes"}]}` with its own key, which can do nothing else. The page
+doesn't list them; the day plan picks up to two. A duration in a reminder's notes, such as
+"25 min, drive to the recycling center", is the least time it's given.
 
 Listening comes from the `spotify_stats` snapshot in S3. The ski report only appears in season
 when 8 or more inches is forecast for the Cottonwoods in the next three days.
@@ -29,16 +31,22 @@ The work Outlook calendar can't be read: the employer blocks phone sign-in and p
 brief blocks out the usual work hours from `WORK_HOURS` (`Mon-Fri,08:00-17:00`) instead. If real
 meeting times are ever sent to `POST /brief/work` (`{"events": [{"start", "end", "allDay"}]}`
 with ISO 8601 times and the Shortcut key), they're used while under a day old. Only times are
-kept, and the page shows each one as "Work".
+kept, and the page shows each one as "Work". `MORNING_HELP` (`Mon-Fri,07:00-07:40`) holds the
+morning stretch spent helping Senah get out the door, at its longest, so nothing is planned over it.
 
-Claude suggests times for the day in the Today window: the workout, music practice, cooking and
-cleaning up dinner, 20 minutes of chores, reading, reminders that fit, and grocery runs and meal
-prep based on the meals written on the page (`POST /brief/meals`). Every suggestion is checked
-against my and shared events and dropped if it overlaps. Each one can be added to the calendar.
+Claude suggests times for the day in the Today window: each workout on its own, music practice,
+cooking and cleaning up dinner, 20 minutes of chores, reading, reminders that fit, and grocery runs
+and meal prep based on the meals written on the page (`POST /brief/meals`). Every suggestion is
+checked against my and shared events and dropped if it overlaps. Gym and pool workouts get 15
+minutes of travel each way. Tapping a suggestion shows a button to add it to the calendar.
 
 Training plans each week from the event saved on the page (`POST /brief/goal`, with the page's
 login token), sports on my calendars, and the last month of Garmin runs, sleep and HRV through
 Garmin's Personal API (`GARMIN_API_KEY`). Saving an event replans that day's brief right away.
+Strength is two gym days a week, a push day and a full-body day, kept off run days when there's
+room. Calisthenics is a daily habit in the morning, or right after an easy run. A workout counts
+as done when Garmin records it (calisthenics recorded as HIIT counts) or when it's checked off on
+the page (`POST /brief/done`, `{"date", "kind", "done"}`).
 Easy pace and the fallback weekly miles are `TRAINING_EASY_PACE` and `TRAINING_BASE_MILES` in
 `.env`.
 

@@ -1,6 +1,8 @@
 import hashlib
 import json
 
+import pytest
+
 import handlers
 
 HASH = hashlib.sha256(b"secret").hexdigest()
@@ -294,3 +296,30 @@ def test_add_event_reports_a_google_failure(monkeypatch):
 def test_add_event_rejects_bad_times(monkeypatch):
     body = json.dumps({"title": "Read", "date": todays_date().isoformat(), "start": "21:30", "end": "21:00"})
     assert handlers.add_event(authed(monkeypatch, body), None)["statusCode"] == 400
+
+
+def test_done_needs_a_login(monkeypatch):
+    monkeypatch.setenv("BRIEF_TOKEN_SECRET", "signing-secret")
+    body = json.dumps({"date": todays_date().isoformat(), "kind": "run", "done": True})
+    assert handlers.mark_done({"headers": {}, "body": body}, None)["statusCode"] == 401
+
+
+def test_done_saves_the_mark_and_recounts_today(monkeypatch):
+    pushed, stored = [], []
+    monkeypatch.setattr(handlers.store, "latest_pushed", lambda kind: None)
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: pushed.append((kind, body)))
+    monkeypatch.setattr(handlers.store, "latest", lambda: {"date": todays_date().isoformat(), "training": {"focus": "old"}})
+    monkeypatch.setattr(handlers.store, "save", stored.append)
+    monkeypatch.setattr(handlers.training, "fetch", lambda now: {"focus": "recounted"})
+    body = json.dumps({"date": todays_date().isoformat(), "kind": "calisthenics", "done": True})
+    response = handlers.mark_done(authed(monkeypatch, body), None)
+    assert response["statusCode"] == 200
+    assert pushed == [("done", {"marks": [{"date": todays_date().isoformat(), "kind": "calisthenics"}]})]
+    assert json.loads(response["body"])["training"] == {"focus": "recounted"}
+    assert stored[0]["training"] == {"focus": "recounted"}
+
+
+def test_done_rejects_a_bad_mark(monkeypatch):
+    monkeypatch.setattr(handlers.store, "save_pushed", lambda kind, body: pytest.fail("saved"))
+    body = json.dumps({"date": todays_date().isoformat(), "kind": "nap", "done": True})
+    assert handlers.mark_done(authed(monkeypatch, body), None)["statusCode"] == 400

@@ -17,14 +17,21 @@ DEFAULT_HOURS = "Mon-Fri,08:00-17:00"
 DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
-def usual_hours() -> tuple[set[int], str, str]:
-    """The workdays (Monday is 0) and the start and end of the work day."""
-    text = os.environ.get("WORK_HOURS") or DEFAULT_HOURS
-    match = re.fullmatch(r"\s*(\w{3})-(\w{3})[\s,]+(\d\d:\d\d)-(\d\d:\d\d)\s*", text)
+HOURS = re.compile(r"\s*(\w{3})-(\w{3})[\s,]+(\d\d:\d\d)-(\d\d:\d\d)\s*")
+
+
+def hours_setting(name: str, default: str) -> tuple[set[int], str, str]:
+    """Days (Monday is 0) and a start and end from a setting such as "Mon-Fri,08:00-17:00"."""
+    match = HOURS.fullmatch(os.environ.get(name) or default)
     if not match or match[1].lower() not in DAY_NAMES or match[2].lower() not in DAY_NAMES or match[3] >= match[4]:
-        match = re.fullmatch(r"(\w{3})-(\w{3}),(\d\d:\d\d)-(\d\d:\d\d)", DEFAULT_HOURS)
+        match = HOURS.fullmatch(default)
     first, last = DAY_NAMES.index(match[1].lower()), DAY_NAMES.index(match[2].lower())
     return set(range(first, last + 1)), match[3], match[4]
+
+
+def usual_hours() -> tuple[set[int], str, str]:
+    """The workdays (Monday is 0) and the start and end of the work day."""
+    return hours_setting("WORK_HOURS", DEFAULT_HOURS)
 
 
 def usual_item(today: date) -> dict | None:

@@ -336,32 +336,142 @@ a.score-card:focus-visible {
   font-weight: 400;
 }
 
-.is-work .schedule-title {
+.is-work .schedule-title,
+.is-routine .schedule-title {
   font-weight: 400;
   color: var(--slate-mid);
 }
 
-/* Suggested times: a dashed edge so they never read as real events. */
+/* Suggested times: a dashed edge so they never read as real events. One line each; tapping it
+   shows the Add button on the right. */
 .is-suggested {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   border-left-style: dashed;
   background: color-mix(in srgb, var(--tan-light) 55%, transparent);
 }
 
-.suggestion-kind {
-  font-size: 13px;
+.suggestion-toggle {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.suggestion-toggle .schedule-title {
+  font-weight: 400;
+}
+
+.add-button {
+  margin-right: 0.5rem;
+  padding: 0.3rem 0.9rem;
+  font: inherit;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--slate-mid);
+  color: var(--paper);
+  background: var(--slate);
+  border: 1px solid var(--slate);
+  cursor: pointer;
+  animation: add-in 160ms ease-out;
 }
 
-.is-suggested .text-button {
-  margin-top: 0.2rem;
-  font-size: 15px;
-}
-
-.is-suggested .text-button:disabled {
-  text-decoration: none;
+.add-button:disabled {
+  opacity: 0.7;
   cursor: default;
+}
+
+@keyframes add-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.4rem);
+  }
+}
+
+.suggestion-error {
+  grid-column: 1 / -1;
+}
+
+/* Lines that open on a tap, and open gently where the browser can animate it. */
+.expander {
+  interpolate-size: allow-keywords;
+}
+
+.expander summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.expander summary span {
+  font-weight: 400;
+}
+
+.expander::details-content {
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    height 200ms ease,
+    opacity 200ms ease,
+    content-visibility 200ms allow-discrete;
+}
+
+.expander[open]::details-content {
+  height: auto;
+  opacity: 1;
+}
+
+.expander[open] > summary {
+  margin-bottom: 0.35rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expander::details-content,
+  .add-button {
+    transition: none;
+    animation: none;
+  }
+}
+
+.workout-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.4rem 0;
+}
+
+.workout-list li + li {
+  border-top: 1px solid var(--tan);
+}
+
+.workout-list input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  accent-color: var(--slate);
+}
+
+.workout-list .expander {
+  grid-column: 2;
+}
+
+.workout-list .gate-error {
+  grid-column: 2;
+}
+
+.workout-list .is-done summary {
+  color: var(--slate-mid);
+  text-decoration: line-through;
+}
+
+.gym-next {
+  margin: 0.4rem 0 0.6rem;
+  font-weight: 700;
 }
 
 .mode-picker {

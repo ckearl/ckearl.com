@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import type { NewEvent, Owner, ScheduleItem, Suggestion, SuggestionKind, TravelMode } from "@/lib/morning-brief/types";
+import type { NewEvent, Owner, ScheduleItem, Suggestion, TravelMode } from "@/lib/morning-brief/types";
 
 export type AddEvent = (event: NewEvent) => Promise<void>;
 
@@ -23,17 +23,6 @@ const SHOWN: Record<View, Owner[]> = {
 };
 
 const OWNER_LABELS: Record<Owner, string> = { mine: "Mine", hers: "Hers", shared: "Shared" };
-
-const KIND_LABELS: Record<SuggestionKind, string> = {
-  todo: "To do",
-  workout: "Workout",
-  music: "Music",
-  dinner: "Dinner",
-  chores: "Chores",
-  reading: "Reading",
-  groceries: "Groceries",
-  meal_prep: "Meal prep",
-};
 
 const MODES: { mode: TravelMode; label: string }[] = [
   { mode: "walk", label: "Walk" },
@@ -103,44 +92,58 @@ function Row({ item }: { item: ScheduleItem }) {
   );
 }
 
-function SuggestionRow({ item, date, onAdd }: { item: Suggestion; date: string; onAdd?: AddEvent }) {
-  const [state, setState] = useState<"idle" | "adding" | "added">("idle");
+// A suggested time is one line. Tapping it shows the button that adds it to the calendar.
+function SuggestionRow({
+  item,
+  date,
+  open,
+  onToggle,
+  onAdd,
+}: {
+  item: Suggestion;
+  date: string;
+  open: boolean;
+  onToggle: () => void;
+  onAdd?: AddEvent;
+}) {
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
 
   async function add() {
     if (!onAdd) return;
-    setState("adding");
+    setAdding(true);
     setError("");
     try {
+      // Once added, the real event takes this row's place.
       await onAdd({ title: item.title, date, start: item.start, end: item.end });
-      setState("added");
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "It didn't save.");
-      setState("idle");
+      setAdding(false);
     }
   }
 
   return (
     <li className="schedule-item is-suggested">
-      <p className="schedule-time">
-        {formatTime(toMinutes(item.start))}
-        <span>{formatTime(toMinutes(item.end))}</span>
-      </p>
-      <div>
-        <p className="suggestion-kind">Suggested · {KIND_LABELS[item.kind]}</p>
-        <p className="schedule-title">{item.title}</p>
-        <p className="muted">{item.why}</p>
-        {onAdd && (
-          <button type="button" className="text-button" disabled={state !== "idle"} onClick={add}>
-            {state === "added" ? "Added to your calendar" : state === "adding" ? "Adding…" : "Add to calendar"}
-          </button>
-        )}
-        {error && (
-          <p className="gate-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
+      <button type="button" className="suggestion-toggle" aria-expanded={open} onClick={onToggle}>
+        <span className="schedule-time">
+          {formatTime(toMinutes(item.start))}
+          <span>{formatTime(toMinutes(item.end))}</span>
+        </span>
+        <span className="schedule-title">
+          <span className="visually-hidden">Suggested: </span>
+          {item.title}
+        </span>
+      </button>
+      {open && (
+        <button type="button" className="add-button" disabled={!onAdd || adding} onClick={add}>
+          {adding ? "Adding…" : "Add"}
+        </button>
+      )}
+      {error && (
+        <p className="gate-error suggestion-error" role="alert">
+          {error}
+        </p>
+      )}
     </li>
   );
 }
@@ -236,6 +239,7 @@ export default function DaySchedule({
   onAddEvent?: AddEvent;
 }) {
   const [view, setView] = useState<View>("both");
+  const [openSuggestion, setOpenSuggestion] = useState<string | null>(null);
   useEffect(() => setView(savedView()), []);
 
   function choose(next: View) {
@@ -280,7 +284,17 @@ export default function DaySchedule({
             row.kind === "event" ? (
               <Row key={`e-${row.item.start}-${row.item.end}-${row.item.title}-${row.item.owner}`} item={row.item} />
             ) : (
-              <SuggestionRow key={`s-${row.item.start}-${row.item.title}`} item={row.item} date={date} onAdd={onAddEvent} />
+              <SuggestionRow
+                key={`s-${row.item.start}-${row.item.title}`}
+                item={row.item}
+                date={date}
+                open={openSuggestion === `${row.item.start}-${row.item.title}`}
+                onToggle={() => {
+                  const key = `${row.item.start}-${row.item.title}`;
+                  setOpenSuggestion((current) => (current === key ? null : key));
+                }}
+                onAdd={onAddEvent}
+              />
             ),
           )}
         </ol>

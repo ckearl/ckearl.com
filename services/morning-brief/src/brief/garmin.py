@@ -24,6 +24,8 @@ KINDS = {
     "open_water_swimming": "swim",
     "swimming": "swim",
     "strength_training": "strength",
+    # Record calisthenics on the watch as HIIT and it counts without a check mark.
+    "hiit": "calisthenics",
 }
 
 

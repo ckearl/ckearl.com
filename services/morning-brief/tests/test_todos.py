@@ -74,3 +74,11 @@ def test_a_fresh_list_or_a_missing_one_changes_nothing():
     todos.flag_stale(missing, NOW)
     assert fresh["sources"] == [{"state": "ok"}]
     assert missing["sources"] == [{"state": "failed"}]
+
+
+@pytest.mark.parametrize(
+    ("notes", "minutes"),
+    [("25 min, drive to the center", 25), ("about 1.5 hours", 90), ("1h", 60), ("takes 40m", 40), ("Bring bags", None), (None, None)],
+)
+def test_noted_minutes_reads_a_duration_from_the_notes(notes, minutes):
+    assert todos.noted_minutes(notes) == minutes

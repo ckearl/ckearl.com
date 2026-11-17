@@ -20,7 +20,7 @@ export type ScheduleItem = {
   start: string; // 24-hour "HH:MM"
   end: string;
   title: string;
-  calendar: "personal" | "work";
+  calendar: "personal" | "work" | "routine"; // routine is a daily block such as the morning help
   owner?: Owner; // missing on briefs from before owners were tracked, which count as mine
   allDay?: boolean;
   usual?: boolean; // work blocks from the usual work hours, not real meeting times
@@ -40,7 +40,7 @@ export type TrainingWindow = {
 export type SuggestionKind = "todo" | "workout" | "music" | "dinner" | "chores" | "reading" | "groceries" | "meal_prep";
 
 // A time Claude suggests for something, checked against the calendar so it never overlaps an event.
-export type Suggestion = { start: string; end: string; title: string; kind: SuggestionKind; why: string };
+export type Suggestion = { start: string; end: string; title: string; kind: SuggestionKind; why?: string };
 
 export type MealDay = { date: string; day: string; lunch?: string; dinner?: string };
 
@@ -57,9 +57,25 @@ export type Goal = { name: string; kind: GoalKind; date: string }; // date is "Y
 // What saving the form sends: an event to train for, or { clear: true } for general fitness.
 export type GoalRequest = Goal | { clear: true };
 
+export type WorkoutKind = "run" | "swim" | "strength" | "calisthenics" | "sport" | "race";
+
+// One of today's workouts. Older briefs have only the title and detail.
+export type Workout = {
+  kind?: WorkoutKind;
+  title: string; // short, such as "Strength, push day"
+  detail: string; // the suggested workout, shown when the line is opened
+  minutes?: number;
+  away?: boolean; // at the gym or pool
+  done?: boolean; // Garmin recorded it, or it was checked off
+};
+
+// What checking a workout off (or back on) sends.
+export type DoneRequest = { date: string; kind: WorkoutKind; done: boolean };
+
 export type Training = {
   focus: string;
-  today: { title: string; detail: string }[];
+  today: Workout[];
+  gymNext?: string; // such as "Tomorrow: gym, push day"
   why: string;
   week: { label: string; done: number; target: number }[];
   plan?: { day: string; date: string; items: string[]; today?: boolean }[];

@@ -1,5 +1,8 @@
 """The Reminders list. An iPhone Shortcut sends every open item each morning, and each send
-replaces the last, so finished items drop off. The brief reads the list and never changes it."""
+replaces the last, so finished items drop off. The brief reads the list and never changes it.
+
+A reminder's notes can say how long it takes, such as "25 min, drive to the recycling center".
+The day plan never gives it less time than that."""
 
 import json
 import re
@@ -11,6 +14,16 @@ MAX_ITEMS = 200
 MAX_TITLE = 200
 MAX_NOTES = 500
 MAX_AGE = timedelta(hours=24)
+DURATION = re.compile(r"(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)\b", re.IGNORECASE)
+
+
+def noted_minutes(notes: str | None) -> int | None:
+    """The first duration written in the notes, in minutes."""
+    match = DURATION.search(notes or "")
+    if not match:
+        return None
+    amount = float(match[1]) * (60 if match[2].lower().startswith("h") else 1)
+    return round(amount) if 1 <= amount <= 600 else None
 
 
 def text(item: dict, field: str, limit: int) -> str:

@@ -115,6 +115,7 @@ export const sampleBrief: Brief = {
     ],
   },
   schedule: [
+    { start: "07:00", end: "07:40", title: "Morning help", calendar: "routine", owner: "mine" },
     { start: "08:30", end: "09:00", title: "Busy", calendar: "work" },
     { start: "10:00", end: "11:00", title: "Busy", calendar: "work" },
     {
@@ -149,10 +150,10 @@ export const sampleBrief: Brief = {
     ],
   },
   suggestions: [
-    { start: "06:15", end: "06:30", title: "Chores", kind: "chores", why: "Twenty minutes before work, while the house is quiet." },
-    { start: "11:05", end: "11:15", title: "Book the car inspection", kind: "todo", why: "Due today, and it fits the gap before lunch." },
-    { start: "17:15", end: "18:00", title: "Easy run, 5 miles", kind: "workout", why: "The warmest free hour, and air quality is still good." },
-    { start: "21:10", end: "21:40", title: "Read", kind: "reading", why: "Winds down after basketball." },
+    { start: "06:15", end: "06:30", title: "Calisthenics, morning", kind: "workout" },
+    { start: "11:05", end: "11:20", title: "Book the car inspection", kind: "todo" },
+    { start: "17:15", end: "18:00", title: "Easy run, 5 miles", kind: "workout" },
+    { start: "21:10", end: "21:40", title: "Read", kind: "reading" },
   ],
   meals: [
     { date: "2026-11-02", day: "Mon", lunch: "Leftover curry", dinner: "Tacos" },
@@ -166,21 +167,29 @@ export const sampleBrief: Brief = {
   training: {
     focus: "Build long-distance endurance",
     today: [
-      { title: "Easy run, 5 miles", detail: "Conversational pace. Go after work, when it's warmest." },
-      { title: "Calisthenics, 15 minutes", detail: "Three rounds: 12 pike push-ups, 15 push-ups, 10 squat jumps, 30-second plank." },
+      { kind: "run", title: "Easy run, 5 miles", detail: "Conversational, 8:30–8:45 per mile.", minutes: 45 },
+      {
+        kind: "calisthenics",
+        title: "Calisthenics, morning",
+        detail: "15 minutes, three rounds: 15 push-ups, 10 pike push-ups, 10 squat jumps, a 30-second plank.",
+        minutes: 15,
+        done: true,
+      },
     ],
-    why: "Basketball tonight counts as your hard effort, so the run stays easy. HRV is in its normal range and sleep was 7h 20m. Strength moves to Wednesday: shoulders, chest and box jumps.",
+    gymNext: "Tomorrow: gym, push day",
+    why: "This week is 12 miles over 3 runs, about 10% more than your recent average.",
     week: [
       { label: "Runs", done: 0, target: 3 },
       { label: "Swims", done: 0, target: 1 },
-      { label: "Strength", done: 0, target: 2 },
+      { label: "Gym", done: 0, target: 2 },
+      { label: "Calisthenics", done: 1, target: 7 },
     ],
     plan: [
-      { day: "Mon", date: "2026-11-02", items: ["Easy 3 mi", "Strength"], today: true },
-      { day: "Tue", date: "2026-11-03", items: ["Basketball"] },
+      { day: "Mon", date: "2026-11-02", items: ["Easy 5 mi"], today: true },
+      { day: "Tue", date: "2026-11-03", items: ["Gym: push day"] },
       { day: "Wed", date: "2026-11-04", items: ["Swim"] },
       { day: "Thu", date: "2026-11-05", items: ["Tempo 3 mi"] },
-      { day: "Fri", date: "2026-11-06", items: ["Strength"] },
+      { day: "Fri", date: "2026-11-06", items: ["Gym: full body"] },
       { day: "Sat", date: "2026-11-07", items: ["Long 5 mi"] },
       { day: "Sun", date: "2026-11-08", items: ["Calisthenics only"] },
     ],

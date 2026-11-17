@@ -122,6 +122,28 @@ def save_goal(event, _context):
     return respond(event, 200, {"goal": goal, "training": brief["training"]})
 
 
+def mark_done(event, _context):
+    """Checks a workout off (or back on) from the page, then recounts today's Training section."""
+    if not auth.authorized(event):
+        return respond(event, 401, {"error": "unauthorized"})
+    now = datetime.now(config.TIMEZONE)
+    try:
+        mark = training.parse_mark(event.get("body") or "", now.date())
+    except ValueError as error:
+        return respond(event, 400, {"error": str(error)})
+    training.save_mark(mark, now.date())
+    brief = todays_brief(now)
+    if brief is None:
+        return respond(event, 200, {"mark": mark})
+    try:
+        brief["training"] = training.fetch(now)
+    except Exception:
+        logging.exception("Recounting failed")
+        return respond(event, 200, {"mark": mark})
+    store.save(brief)
+    return respond(event, 200, {"mark": mark, "training": brief["training"]})
+
+
 def save_meals(event, _context):
     """Saves meals written on the page and shows them in today's brief right away."""
     if not auth.authorized(event):

@@ -45,13 +45,13 @@ class FakeClient:
         return self.response
 
 
-def block(kind, title, start, minutes, reason="Fits.", reminder_id=-1):
-    return {"kind": kind, "title": title, "start": start, "minutes": minutes, "reminder_id": reminder_id, "reason": reason}
+def block(kind, title, start, minutes, ref=-1):
+    return {"kind": kind, "title": title, "start": start, "minutes": minutes, "ref": ref}
 
 
 def judgment(**overrides):
     return {
-        "day_plan": [block("todo", "", "17:30", 15, "It fits after work.", reminder_id=1)],
+        "day_plan": [block("todo", "", "17:30", 15, ref=1)],
         "top_stories": [{"story_id": 2, "why": "It matters."}],
         "sports_line": "The Jazz lost.",
         **overrides,
@@ -83,22 +83,63 @@ def test_merge_uses_the_original_reminder_title():
 
     claude.merge(brief)
 
-    assert brief["suggestions"] == [{"start": "17:30", "end": "17:45", "title": "Buy stamps", "kind": "todo", "why": "It fits after work."}]
+    assert brief["suggestions"] == [{"start": "17:30", "end": "17:45", "title": "Buy stamps", "kind": "todo"}]
     assert "judgment" not in brief
 
 
 def test_merge_drops_unknown_and_repeated_reminders():
     picks = [
-        block("todo", "", "07:00", 5, "Unknown", reminder_id=9),
-        block("todo", "", "07:10", 5, "Unknown", reminder_id=-1),
-        block("todo", "", "07:20", 5, "First", reminder_id=0),
-        block("todo", "", "07:30", 5, "Repeat", reminder_id=0),
+        block("todo", "", "07:00", 5, ref=9),
+        block("todo", "", "07:10", 5, ref=-1),
+        block("todo", "", "07:20", 5, ref=0),
+        block("todo", "", "07:30", 5, ref=0),
     ]
     brief = {**sample_brief(), "judgment": judgment(day_plan=picks)}
 
     claude.merge(brief)
 
-    assert [item["why"] for item in brief["suggestions"]] == ["First"]
+    assert [(item["title"], item["start"]) for item in brief["suggestions"]] == [("Oil change", "07:20")]
+
+
+def test_merge_keeps_at_most_two_reminders():
+    items = [{"title": f"Task {number}"} for number in range(4)]
+    picks = [block("todo", "", f"1{number}:00", 15, ref=number) for number in range(4)]
+    brief = {**sample_brief(), "todos": {"list": "to do", "items": items}, "judgment": judgment(day_plan=picks)}
+
+    claude.merge(brief)
+
+    assert [item["title"] for item in brief["suggestions"]] == ["Task 0", "Task 1"]
+
+
+def test_merge_gives_a_reminder_the_time_its_notes_ask_for():
+    items = [{"title": "Empty recycling", "notes": "25 min, drive to the recycling center"}]
+    brief = {**sample_brief(), "todos": {"list": "to do", "items": items}, "judgment": judgment(day_plan=[block("todo", "", "18:00", 5, ref=0)])}
+
+    claude.merge(brief)
+
+    assert (brief["suggestions"][0]["start"], brief["suggestions"][0]["end"]) == ("18:00", "18:25")
+
+
+def test_merge_titles_workouts_from_the_plan_and_adds_gym_travel():
+    workouts = [
+        {"kind": "calisthenics", "title": "Calisthenics, morning", "detail": "", "minutes": 15},
+        {"kind": "strength", "title": "Strength, push day", "detail": "", "minutes": 45, "away": True},
+        {"kind": "run", "title": "Easy run, 3 miles", "detail": "", "minutes": 30, "done": True},
+    ]
+    picks = [
+        block("workout", "Morning set", "06:30", 15, ref=0),
+        block("workout", "Gym", "17:30", 45, ref=1),
+        block("workout", "Run", "19:00", 30, ref=2),
+        block("workout", "Again", "21:00", 15, ref=0),
+    ]
+    brief = {**sample_brief(), "training": {"today": workouts}, "judgment": judgment(day_plan=picks)}
+
+    claude.merge(brief)
+
+    assert [(item["title"], item["start"], item["end"]) for item in brief["suggestions"]] == [
+        ("Calisthenics, morning", "06:30", "06:45"),
+        ("Strength, push day", "17:30", "18:45"),
+    ]
 
 
 def test_merge_drops_blocks_that_overlap_his_events_or_each_other():
@@ -108,7 +149,7 @@ def test_merge_drops_blocks_that_overlap_his_events_or_each_other():
         {"title": "Birthday", "owner": "shared", "start": "00:00", "end": "23:59", "allDay": True},
     ]
     picks = [
-        block("workout", "Easy run", "16:30", 45),
+        block("music", "Guitar", "16:30", 45),
         block("dinner", "Cook tacos", "18:00", 40),
         block("chores", "Chores", "18:20", 20),
         block("reading", "Read", "21:00", 30),
@@ -143,12 +184,15 @@ def test_merge_drops_blocks_outside_the_waking_day_or_with_bad_times():
 def test_fetch_sends_training_and_meals(monkeypatch):
     fake = FakeClient(reply(json.dumps(judgment())))
     monkeypatch.setattr(claude, "client", lambda: fake)
-    brief = {**sample_brief(), "training": {"focus": "General fitness", "today": [{"title": "Easy run", "detail": "3 mi"}], "why": "Base.", "week": []}, "meals": [{"date": "2026-11-02", "day": "Mon", "dinner": "Tacos"}]}
+    today = [{"kind": "run", "title": "Easy run", "detail": "3 mi", "minutes": 30}, {"kind": "strength", "title": "Gym", "detail": "Lift", "minutes": 45, "away": True, "done": True}]
+    brief = {**sample_brief(), "training": {"focus": "General fitness", "today": today, "why": "Base.", "week": []}, "meals": [{"date": "2026-11-02", "day": "Mon", "dinner": "Tacos"}]}
+    brief["todos"]["items"][1]["notes"] = "About 1 hour"
 
     claude.fetch(brief, TODAY)
 
     data = json.loads(fake.sent["messages"][0]["content"].removeprefix("<data>\n").removesuffix("\n</data>"))
-    assert data["training"]["today"] == [{"title": "Easy run", "detail": "3 mi"}]
+    assert data["training"]["today"] == [{"id": 0, "title": "Easy run", "minutes": 30}, {"id": 1, "title": "Gym", "minutes": 45, "away": True, "done": True}]
+    assert data["reminders"][1] == {"id": 1, "title": "Buy stamps", "notes": "About 1 hour", "minutes": 60}
     assert "week" not in data["training"]
     assert data["meals"][0]["dinner"] == "Tacos"
     assert fake.sent["fallbacks"] == "default"

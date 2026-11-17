@@ -51,6 +51,10 @@ Parameters:
     Type: String
     Default: "Mon-Fri,08:00-17:00"
     Description: Usual work hours, such as Mon-Fri,08:00-17:00 (from .env via scripts/deploy.sh)
+  MorningHelp:
+    Type: String
+    Default: "Mon-Fri,07:00-07:40"
+    Description: The morning stretch spent helping get out the door, such as Mon-Fri,07:00-07:40 (from .env via scripts/deploy.sh)
   AllowedOrigins:
     Type: String
     Default: https://ckearl.com,http://localhost:53000,http://100.73.47.33:53000
@@ -100,6 +104,7 @@ Resources:
           TRAINING_EASY_PACE: !Ref TrainingEasyPace
           TRAINING_BASE_MILES: !Ref TrainingBaseMiles
           WORK_HOURS: !Ref WorkHours
+          MORNING_HELP: !Ref MorningHelp
           ANTHROPIC_API_KEY: !Ref AnthropicApiKey
       Policies:
         - DynamoDBWritePolicy: { TableName: !Ref BriefTable }
@@ -224,6 +229,35 @@ Resources:
           Properties:
             RestApiId: !Ref BriefApi
             Path: /brief/goal
+            Method: POST
+
+  DoneFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: morning-brief-done
+      Handler: handlers.mark_done
+      # API Gateway stops waiting at 29 seconds.
+      Timeout: 28
+      Environment:
+        Variables:
+          BRIEF_TABLE: !Ref BriefTable
+          BRIEF_TOKEN_SECRET: !Ref BriefTokenSecret
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
+          GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+          GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken
+          CALENDAR_OWNERS: !Ref CalendarOwners
+          GARMIN_API_KEY: !Ref GarminApiKey
+          TRAINING_EASY_PACE: !Ref TrainingEasyPace
+          TRAINING_BASE_MILES: !Ref TrainingBaseMiles
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref BriefTable }
+      Events:
+        Done:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BriefApi
+            Path: /brief/done
             Method: POST
 
   MealsFunction:

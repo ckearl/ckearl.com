@@ -3,16 +3,10 @@ import DaySchedule, { type AddEvent } from "@/components/morning-brief/DaySchedu
 import MealPlan, { type SaveMeals } from "@/components/morning-brief/MealPlan";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
-import TrainingPlan from "@/components/morning-brief/TrainingPlan";
+import TrainingPlan, { type MarkDone } from "@/components/morning-brief/TrainingPlan";
 import type { Brief, GoalRequest } from "@/lib/morning-brief/types";
 
 const stateLabels = { ok: "OK", stale: "Old", failed: "Failed" };
-
-function dueLabel(due: string, today: string) {
-  if (due < today) return "Overdue";
-  if (due === today) return "Due today";
-  return `Due ${new Date(`${due}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-}
 
 export default function BriefView({
   brief,
@@ -20,19 +14,22 @@ export default function BriefView({
   onSaveGoal,
   onSaveMeals,
   onAddEvent,
+  onMarkDone,
 }: {
   brief: Brief;
   stale?: boolean;
   onSaveGoal?: (goal: GoalRequest) => Promise<boolean>;
   onSaveMeals?: SaveMeals;
   onAddEvent?: AddEvent;
+  onMarkDone?: MarkDone;
 }) {
   const dateLabel = new Date(`${brief.date}T12:00:00`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  const { todos, weather, training, meals, listening, words, ski } = brief;
+  const { weather, training, meals, listening, words, ski } = brief;
+  const best = weather?.trainingWindows.find((window) => window.best);
 
   return (
     <>
@@ -65,45 +62,29 @@ export default function BriefView({
             </div>
             <p>{weather.details}</p>
             <p className="lead-line">{weather.plan}</p>
-            <h3>Best time to train outside</h3>
             {weather.trainingWindows.length > 0 ? (
-              <ul className="windows-list">
-                {weather.trainingWindows.map((window) => (
-                  <li key={window.label} className={window.best ? "is-best" : ""}>
-                    <strong>{window.label}, {window.time}</strong>
-                    <span>{window.conditions}</span>
-                  </li>
-                ))}
-              </ul>
+              <details className="expander">
+                <summary>
+                  Best time to train outside{best && <span>: {best.label.toLowerCase()}, {best.time}</span>}
+                </summary>
+                <ul className="windows-list">
+                  {weather.trainingWindows.map((window) => (
+                    <li key={window.label} className={window.best ? "is-best" : ""}>
+                      <strong>{window.label}, {window.time}</strong>
+                      <span>{window.conditions}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             ) : (
-              <p>Your calendar fills the usual training times today.</p>
-            )}
-          </BriefWindow>
-        )}
-
-        {todos && (
-          <BriefWindow title={todos.list}>
-            {todos.items.length > 0 ? (
-              <ul className="plan-list">
-                {todos.items.map((item, index) => (
-                  <li key={`${index}-${item.title}`}>
-                    <p>
-                      <strong>{item.title}</strong>
-                      {item.due && <span className="muted"> ({dueLabel(item.due, brief.date)})</span>}
-                    </p>
-                    {item.notes && <p className="muted">{item.notes}</p>}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>Nothing left on the list.</p>
+              <p className="muted">Your calendar fills the usual training times today.</p>
             )}
           </BriefWindow>
         )}
 
         {training && (
           <BriefWindow title="Training">
-            <TrainingPlan training={training} onSaveGoal={onSaveGoal} />
+            <TrainingPlan training={training} date={brief.date} onSaveGoal={onSaveGoal} onMarkDone={onMarkDone} />
           </BriefWindow>
         )}
 

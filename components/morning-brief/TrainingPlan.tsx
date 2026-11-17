@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { GoalKind, GoalRequest, Training } from "@/lib/morning-brief/types";
+import type { DoneRequest, GoalKind, GoalRequest, Training, Workout } from "@/lib/morning-brief/types";
+
+export type MarkDone = (mark: DoneRequest) => Promise<void>;
 
 const KINDS: { kind: GoalKind; label: string }[] = [
   { kind: "5k", label: "5K" },
@@ -82,24 +84,75 @@ function GoalForm({ training, onSave }: { training: Training; onSave?: SaveGoal 
   );
 }
 
-export default function TrainingPlan({ training, onSaveGoal }: { training: Training; onSaveGoal?: SaveGoal }) {
+// One line per workout. Tapping the name opens the suggested workout; the box checks it off.
+function WorkoutLine({ item, date, onMark }: { item: Workout; date: string; onMark?: MarkDone }) {
+  const [done, setDone] = useState(Boolean(item.done));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle(next: boolean) {
+    if (!onMark || !item.kind) return;
+    setDone(next);
+    setSaving(true);
+    setError("");
+    try {
+      await onMark({ date, kind: item.kind, done: next });
+    } catch (failure) {
+      setDone(!next);
+      setError(failure instanceof Error ? failure.message : "That didn't save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <li className={done ? "is-done" : undefined}>
+      {item.kind && (
+        <input
+          type="checkbox"
+          checked={done}
+          disabled={!onMark || saving}
+          aria-label={`Done: ${item.title}`}
+          onChange={(event) => toggle(event.target.checked)}
+        />
+      )}
+      <details className="expander">
+        <summary>{item.title}</summary>
+        <p>{item.detail}</p>
+      </details>
+      {error && (
+        <p className="gate-error" role="alert">
+          {error}
+        </p>
+      )}
+    </li>
+  );
+}
+
+export default function TrainingPlan({
+  training,
+  date,
+  onSaveGoal,
+  onMarkDone,
+}: {
+  training: Training;
+  date: string;
+  onSaveGoal?: SaveGoal;
+  onMarkDone?: MarkDone;
+}) {
   return (
     <>
-      <p className="muted">Focus: {training.focus}</p>
-      <ul className="plan-list">
+      <ul className="workout-list">
         {training.today.map((item) => (
-          <li key={item.title}>
-            <p>
-              <strong>{item.title}</strong>
-            </p>
-            <p>{item.detail}</p>
-          </li>
+          <WorkoutLine key={`${item.title}-${item.done}`} item={item} date={date} onMark={onMarkDone} />
         ))}
       </ul>
-      <p>{training.why}</p>
-      {training.plan && (
-        <>
-          <h3>The week</h3>
+      {training.gymNext && <p className="gym-next">{training.gymNext}</p>}
+      <details className="expander">
+        <summary>This week</summary>
+        <p className="muted">Focus: {training.focus}</p>
+        <p>{training.why}</p>
+        {training.plan && (
           <ol className="week-plan">
             {training.plan.map((day) => (
               <li key={day.date} className={day.today ? "is-today" : undefined} aria-current={day.today ? "date" : undefined}>
@@ -108,24 +161,27 @@ export default function TrainingPlan({ training, onSaveGoal }: { training: Train
               </li>
             ))}
           </ol>
-        </>
-      )}
-      <h3>Done so far</h3>
-      <dl className="week-meters">
-        {training.week.map((item) => (
-          <div key={item.label}>
-            <dt>{item.label}</dt>
-            <dd>
-              {item.done} of {item.target}
-            </dd>
-            <span className="bar" aria-hidden="true">
-              <span style={{ width: `${Math.min(100, (item.done / item.target) * 100)}%` }} />
-            </span>
-          </div>
-        ))}
-      </dl>
+        )}
+        <h3>Done so far</h3>
+        <dl className="week-meters">
+          {training.week.map((item) => (
+            <div key={item.label}>
+              <dt>{item.label}</dt>
+              <dd>
+                {item.done} of {item.target}
+              </dd>
+              <span className="bar" aria-hidden="true">
+                <span style={{ width: `${Math.min(100, (item.done / item.target) * 100)}%` }} />
+              </span>
+            </div>
+          ))}
+        </dl>
+        <p className="muted fine-print">
+          Workouts your watch records count on their own. Check off anything it doesn&apos;t, such as calisthenics. A plan
+          from simple rules, not coaching or medical advice. Ease off if something hurts.
+        </p>
+      </details>
       <GoalForm key={training.goal ? JSON.stringify(training.goal) : "none"} training={training} onSave={onSaveGoal} />
-      <p className="muted fine-print">A plan from simple rules, not coaching or medical advice. Ease off if something hurts.</p>
     </>
   );
 }

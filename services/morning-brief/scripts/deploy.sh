@@ -21,5 +21,6 @@ sam deploy --parameter-overrides \
   "TrainingEasyPace=${TRAINING_EASY_PACE:-}" \
   "TrainingBaseMiles=${TRAINING_BASE_MILES:-7.5}" \
   "WorkHours=${WORK_HOURS:-Mon-Fri,08:00-17:00}" \
+  "MorningHelp=${MORNING_HELP:-Mon-Fri,07:00-07:40}" \
   "AnthropicApiKey=$ANTHROPIC_API_KEY" \
   "$@"

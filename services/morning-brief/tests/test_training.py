@@ -109,8 +109,26 @@ def test_sunday_stays_free():
 def test_strength_twice_and_one_swim_a_week():
     week = training.plan_week(MONDAY, None, history(8), {})
     assert (week["strength"], week["swims"]) == (2, 1)
-    strength = [index for index, day in enumerate(week["days"]) if "strength" in kinds(week, day)]
+    strength = [index for index, day in enumerate(week["days"]) for kind in kinds(week, day) if kind in ("push", "full")]
     assert strength[1] - strength[0] > 1
+
+
+def test_gym_days_are_one_push_and_one_full_body_away_from_runs():
+    week = training.plan_week(MONDAY, None, history(8), {})
+    gym = {day: kind for day in week["days"] for kind in kinds(week, day) if kind in ("push", "full")}
+    assert sorted(gym.values()) == ["full", "push"]
+    for day in gym:
+        assert not {"easy", "long", "quality", "swim"} & set(kinds(week, day))
+
+
+def test_calisthenics_is_daily_on_its_own_or_after_an_easy_run():
+    week = training.plan_week(MONDAY, None, history(8), {})
+    for day, items in week["days"].items():
+        calisthenics = next(item for item in items if item["kind"] == "calisthenics")
+        after_run = "easy" in kinds(week, day)
+        assert calisthenics["title"] == ("Calisthenics, after the run" if after_run else "Calisthenics, morning")
+        if "push" in kinds(week, day):
+            assert "squats" in calisthenics["detail"]
 
 
 def test_swim_goal_swims_three_times():
@@ -201,7 +219,8 @@ def test_build_shapes_the_page_section():
     assert result["week"][0] == {"label": "Miles", "done": 3, "target": result["week"][0]["target"]}
     assert [day["day"] for day in result["plan"]] == ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     assert result["plan"][2]["today"] is True
-    assert result["today"][-1]["title"] == "Calisthenics, 15 minutes"
+    assert result["today"][-1]["title"].startswith("Calisthenics")
+    assert result["today"][-1]["minutes"] == 15
     assert result["goal"]["kind"] == "half"
 
 
@@ -219,3 +238,69 @@ def test_summary_doesnt_claim_ten_percent_when_the_floor_sets_the_target():
     result = plan_for(MONDAY + timedelta(days=2), None, history(4))
     assert "a gentle start" in result["why"]
     assert "10%" not in result["why"]
+
+
+def test_parse_mark_checks_kind_and_date():
+    today = date(2026, 11, 12)
+    assert training.parse_mark(json.dumps({"date": "2026-11-12", "kind": "calisthenics", "done": True}), today) == {
+        "date": "2026-11-12",
+        "kind": "calisthenics",
+        "done": True,
+    }
+    for body in (
+        {"date": "2026-11-12", "kind": "nap", "done": True},
+        {"date": "2026-11-13", "kind": "run", "done": True},
+        {"date": "2026-11-01", "kind": "run", "done": True},
+        {"date": "2026-11-12", "kind": "run", "done": "yes"},
+    ):
+        with pytest.raises(ValueError):
+            training.parse_mark(json.dumps(body), today)
+
+
+def test_save_mark_adds_and_removes_one_day(monkeypatch):
+    stored = {"marks": [{"date": "2026-09-01", "kind": "run"}, {"date": "2026-11-11", "kind": "calisthenics"}]}
+    saved = []
+    monkeypatch.setattr(training.store, "latest_pushed", lambda kind: stored)
+    monkeypatch.setattr(training.store, "save_pushed", lambda kind, body: saved.append((kind, body)))
+    training.save_mark({"date": "2026-11-12", "kind": "strength", "done": True}, date(2026, 11, 12))
+    training.save_mark({"date": "2026-11-11", "kind": "calisthenics", "done": False}, date(2026, 11, 12))
+    assert saved[0] == ("done", {"marks": [{"date": "2026-11-11", "kind": "calisthenics"}, {"date": "2026-11-12", "kind": "strength"}]})
+    assert saved[1] == ("done", {"marks": []})
+
+
+def test_check_marks_count_this_week_and_mark_today_done():
+    wednesday = MONDAY + timedelta(days=2)
+    week = training.plan_week(MONDAY, None, history(8), {})
+    run_day = next(day for day in week["days"] if "easy" in kinds(week, day) and day < wednesday)
+    run_miles = next(item["miles"] for item in week["days"][run_day] if item["kind"] == "run")
+    data = {
+        "activities": history(8),
+        "marks": [
+            {"date": run_day.isoformat(), "kind": "run"},
+            {"date": MONDAY.isoformat(), "kind": "calisthenics"},
+            {"date": wednesday.isoformat(), "kind": "calisthenics"},
+        ],
+    }
+    result = training.build(wednesday, None, data, {})
+    meters = {meter["label"]: meter for meter in result["week"]}
+    assert meters["Runs"]["done"] == 1
+    assert meters["Miles"]["done"] == run_miles
+    assert meters["Calisthenics"] == {"label": "Calisthenics", "done": 2, "target": 7}
+    calisthenics = next(item for item in result["today"] if item["kind"] == "calisthenics")
+    assert calisthenics["done"] is True
+
+
+def test_a_checked_run_isnt_called_missed():
+    goal = {"name": "Half", "kind": "half", "date": "2027-03-06"}
+    week = training.plan_week(MONDAY, goal, history(12), {})
+    run_day = next(day for day in week["days"] if "easy" in kinds(week, day) and day.weekday() < 5)
+    data = {"activities": history(12), "marks": [{"date": run_day.isoformat(), "kind": "run"}]}
+    result = training.build(run_day + timedelta(days=1), goal, data, {})
+    assert "didn't happen" not in result["why"]
+
+
+def test_next_gym_day_names_the_session():
+    week = training.plan_week(MONDAY, None, history(8), {})
+    first_gym = min(day for day in week["days"] if {"push", "full"} & set(kinds(week, day)))
+    result = plan_for(first_gym - timedelta(days=1), None, history(8))
+    assert result["gymNext"] == "Tomorrow: gym, push day"

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import BriefView from "@/components/morning-brief/BriefView";
 import Window from "@/components/new-design/Window";
 import { sampleBrief } from "@/data/morning-brief/sample";
-import type { Brief, GoalRequest, MealDay, MealsRequest, NewEvent, ScheduleItem, Training } from "@/lib/morning-brief/types";
+import type { Brief, DoneRequest, GoalRequest, MealDay, MealsRequest, NewEvent, ScheduleItem, Training } from "@/lib/morning-brief/types";
 
 const API_URL = process.env.NEXT_PUBLIC_BRIEF_API;
 const TOKEN_KEY = "morning-brief-token";
@@ -91,6 +91,12 @@ export default function BriefGate() {
     return Boolean(result.training);
   };
 
+  // Checks a workout off. The backend recounts the week and sends Training back.
+  const markDone = async (mark: DoneRequest) => {
+    const result = await post<{ training?: Training }>("/brief/done", mark, "That didn't save.");
+    if (result.training) setBrief((current) => current && { ...current, training: result.training });
+  };
+
   const saveMeals = async (meals: MealsRequest) => {
     const result = await post<{ meals: MealDay[] }>("/brief/meals", meals, "The meals didn't save.");
     setBrief((current) => current && { ...current, meals: result.meals });
@@ -121,6 +127,7 @@ export default function BriefGate() {
         onSaveGoal={API_URL ? saveGoal : undefined}
         onSaveMeals={API_URL ? saveMeals : undefined}
         onAddEvent={API_URL ? addEvent : undefined}
+        onMarkDone={API_URL ? markDone : undefined}
       />
     );
   }

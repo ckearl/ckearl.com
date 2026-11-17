@@ -4,6 +4,11 @@ calendar and the last month of Garmin workouts, then adjusts today for what Garm
 yesterday and last night. The rules are in
 docs/superpowers/plans/2026-11-01-morning-brief-training-and-claude.md.
 
+Strength happens at the gym, twice a week: a push day and a full-body day, kept off run days
+when there's room. Calisthenics is a short daily habit of its own, in the morning, or straight
+after an easy run. Garmin marks a workout done when the watch records it, and the page's check
+marks cover the rest, such as calisthenics.
+
 This is a plan, not coaching or medical advice."""
 
 import json
@@ -49,18 +54,25 @@ EASY_DAYS = [0, 2, 3, 1, 4, 5]
 SWIM_DAYS = [2, 4, 0, 1, 3, 5]
 STRENGTH_DAYS = [0, 3, 1, 4, 2]
 
-CALISTHENICS = {
-    "kind": "calisthenics",
-    "title": "Calisthenics, 15 minutes",
-    "detail": "Three rounds: 12 pike push-ups, 15 push-ups, 10 squat jumps, 30-second plank.",
-    "hard": False,
-}
+CALISTHENICS_MINUTES = 15
+CALISTHENICS_UPPER = "15 minutes, three rounds: 15 push-ups, 10 pike push-ups, 10 squat jumps, a 30-second plank."
+# On a push day the gym covers the upper body, so the habit moves to legs and core.
+CALISTHENICS_LOWER = "15 minutes, three rounds: 15 air squats, 10 lunges a side, 15 glute bridges, a 30-second side plank each side."
+STRENGTH_MINUTES = 45
 STRENGTH = {
-    "kind": "strength",
-    "title": "Strength, 40 minutes",
-    "detail": "Shoulders, chest and vertical jump: overhead press, bench or weighted push-ups, pull-ups, box jumps, split squats.",
-    "hard": False,
+    "push": {
+        "title": "Strength, push day",
+        "detail": "At the gym, about 45 minutes. Bench press 3 × 6–8, overhead press 3 × 6–8, incline dumbbell press 3 × 10, dips 3 × 8–12, lateral raises 3 × 12–15.",
+    },
+    "full": {
+        "title": "Strength, full body",
+        "detail": "At the gym, about 45 minutes. Squats 3 × 6–8, Romanian deadlifts 3 × 8, pull-ups 3 × as many as you can, dumbbell bench 3 × 10, box jumps 3 × 5.",
+    },
 }
+STRENGTH_LABELS = {"push": "Push day", "full": "Full body"}
+MARK_KINDS = ("run", "swim", "strength", "calisthenics", "sport", "race")
+MARK_DAYS = 6
+KEEP_MARKS_DAYS = 35
 
 
 # Settings
@@ -106,6 +118,31 @@ def parse_goal(body: str, today: date) -> dict | None:
         raise ValueError("The date must be within the next two years")
     name = str(payload.get("name") or "").strip()[:80] or GOALS[kind]["label"]
     return {"name": name, "kind": kind, "date": day.isoformat()}
+
+
+# Check marks saved from the page
+
+def parse_mark(body: str, today: date) -> dict:
+    """{"date": "YYYY-MM-DD", "kind": "calisthenics", "done": true} for today or the last few days."""
+    payload = json.loads(body)
+    if not isinstance(payload, dict) or payload.get("kind") not in MARK_KINDS or not isinstance(payload.get("done"), bool):
+        raise ValueError("Expected a date, a workout kind and done")
+    try:
+        day = date.fromisoformat(str(payload.get("date")))
+    except ValueError as error:
+        raise ValueError("Expected a YYYY-MM-DD date") from error
+    if not today - timedelta(days=MARK_DAYS) <= day <= today:
+        raise ValueError("Only this past week can be checked off")
+    return {"date": day.isoformat(), "kind": payload["kind"], "done": payload["done"]}
+
+
+def save_mark(mark: dict, today: date) -> None:
+    oldest = (today - timedelta(days=KEEP_MARKS_DAYS)).isoformat()
+    saved = (store.latest_pushed("done") or {}).get("marks", [])
+    marks = [item for item in saved if item["date"] >= oldest and (item["date"], item["kind"]) != (mark["date"], mark["kind"])]
+    if mark["done"]:
+        marks.append({"date": mark["date"], "kind": mark["kind"]})
+    store.save_pushed("done", {"marks": marks})
 
 
 # The week
@@ -157,24 +194,47 @@ def target_miles(spec: dict, base: float, week_phase: str) -> float:
     return round_half(build * share)
 
 
+def run_minutes(miles: float, pace: tuple[int, int] | None) -> int:
+    """Time on the run at the slow end of easy pace, or 10-minute miles without one."""
+    per_mile = pace[1] if pace else 600
+    return max(10, round(miles * per_mile / 60 / 5) * 5)
+
+
 def run_item(kind: str, miles: float, pace: tuple[int, int] | None, week_number: int) -> dict:
     easy = f"Conversational, {pace_text(pace)} per mile." if pace else "Conversational pace."
+    common = {"kind": "run", "miles": miles, "minutes": run_minutes(miles, pace)}
     if kind == "long":
-        return {"kind": "run", "type": "long", "title": f"Long run, {miles_text(miles)}", "detail": f"{easy} Easy the whole way.", "miles": miles, "hard": True}
+        return {**common, "type": "long", "title": f"Long run, {miles_text(miles)}", "detail": f"{easy} Easy the whole way.", "hard": True}
     if kind == "quality":
         if week_number % 2:
             detail = "1 mile easy, then 6 × 400 m hard with 400 m jogs between, then easy to finish."
-            return {"kind": "run", "type": "quality", "title": f"Intervals, {miles_text(miles)}", "detail": detail, "miles": miles, "hard": True}
+            return {**common, "type": "quality", "title": f"Intervals, {miles_text(miles)}", "detail": detail, "hard": True}
         tempo = f" at about {pace_text((pace[0] - 60, pace[1] - 60))}" if pace else ""
         detail = f"1 mile easy, {miles_text(max(1, miles - 2))} comfortably hard{tempo}, 1 mile easy."
-        return {"kind": "run", "type": "quality", "title": f"Tempo run, {miles_text(miles)}", "detail": detail, "miles": miles, "hard": True}
-    return {"kind": "run", "type": "easy", "title": f"Easy run, {miles_text(miles)}", "detail": easy, "miles": miles, "hard": False}
+        return {**common, "type": "quality", "title": f"Tempo run, {miles_text(miles)}", "detail": detail, "hard": True}
+    return {**common, "type": "easy", "title": f"Easy run, {miles_text(miles)}", "detail": easy, "hard": False}
 
 
 def swim_item(goal_kind: str | None) -> dict:
     if goal_kind == "swim":
-        return {"kind": "swim", "title": "Swim, 45 minutes", "detail": "Warm up 200, then 8 × 100 steady with 20 seconds rest, then easy laps.", "hard": False}
-    return {"kind": "swim", "title": "Swim, 30 minutes", "detail": "Easy laps, mostly freestyle.", "hard": False}
+        return {"kind": "swim", "title": "Swim, 45 minutes", "detail": "Warm up 200, then 8 × 100 steady with 20 seconds rest, then easy laps.", "minutes": 45, "away": True, "hard": False}
+    return {"kind": "swim", "title": "Swim, 30 minutes", "detail": "Easy laps, mostly freestyle.", "minutes": 30, "away": True, "hard": False}
+
+
+def strength_item(kind: str) -> dict:
+    return {"kind": "strength", "type": kind, **STRENGTH[kind], "minutes": STRENGTH_MINUTES, "away": True, "hard": False}
+
+
+def calisthenics_item(day_items: list[dict]) -> dict:
+    after_run = any(item.get("type") == "easy" for item in day_items)
+    push_day = any(item.get("type") == "push" for item in day_items)
+    return {
+        "kind": "calisthenics",
+        "title": "Calisthenics, after the run" if after_run else "Calisthenics, morning",
+        "detail": CALISTHENICS_LOWER if push_day else CALISTHENICS_UPPER,
+        "minutes": CALISTHENICS_MINUTES,
+        "hard": False,
+    }
 
 
 def spread_pick(candidates: list[int], taken: set[int], count: int) -> list[int]:
@@ -257,15 +317,21 @@ def plan_week(week_start: date, goal: dict | None, activities: list[dict], calen
     for day in swim_days:
         items[day].append(swim_item(goal_kind))
 
+    # Gym days go where nothing else is planned when they can, so no day stacks everything at once.
     strength_count = {"race": 0, "taper": 1}.get(week_phase, 2)
     before_hard = {day - 1 for day in hard_days}
-    strength_days = spread_pick([day for day in STRENGTH_DAYS if day not in blocked and day not in hard_days and day not in before_hard], set(), strength_count)
-    for day in strength_days:
-        items[day].append(dict(STRENGTH))
+    strength_free = [day for day in STRENGTH_DAYS if day not in blocked and day not in hard_days and day not in before_hard]
+    strength_days = spread_pick(strength_free, run_days | set(swim_days), strength_count)
+    if len(strength_days) < strength_count:
+        rest = [day for day in strength_free if day not in strength_days]
+        strength_days += spread_pick(rest, set(strength_days), strength_count - len(strength_days))
+    strength_days.sort()
+    for day, kind in zip(strength_days, ["push", "full"] if len(strength_days) > 1 else ["full"]):
+        items[day].append(strength_item(kind))
 
     for index in range(7):
         if index != race:
-            items[index].append(dict(CALISTHENICS))
+            items[index].append(calisthenics_item(items[index]))
 
     return {
         "start": week_start,
@@ -292,12 +358,18 @@ def soften(item: dict, pace: tuple[int, int] | None, week_number: int) -> dict:
     return item
 
 
+def done_kinds(data: dict, day: str) -> set[str]:
+    """What Garmin recorded on a day, plus what was checked off on the page."""
+    recorded = {item["kind"] for item in data.get("activities", []) if item["date"] == day}
+    return recorded | {mark["kind"] for mark in data.get("marks", []) if mark["date"] == day}
+
+
 def adjust_today(today: date, items: list[dict], yesterday_plan: list[dict], yesterday_sport: str | None, data: dict) -> tuple[list[dict], list[str]]:
     notes: list[str] = []
     yesterday = (today - timedelta(days=1)).isoformat()
     done = [item for item in data.get("activities", []) if item["date"] == yesterday]
     planned_run = any(item["kind"] == "run" for item in yesterday_plan)
-    if planned_run and not any(item["kind"] == "run" for item in done):
+    if planned_run and "run" not in done_kinds(data, yesterday):
         notes.append("Yesterday's run didn't happen, so it's dropped rather than added to today.")
 
     reasons = []
@@ -360,7 +432,43 @@ def short_label(item: dict) -> str:
     if item["kind"] == "run":
         word = item["title"].split(",")[0].split()[0]
         return f"{word} {item['miles']:g} mi"
-    return {"swim": "Swim", "strength": "Strength", "race": "Race"}.get(item["kind"], item["title"])
+    if item["kind"] == "strength":
+        return f"Gym: {STRENGTH_LABELS[item['type']].lower()}"
+    return {"swim": "Swim", "race": "Race"}.get(item["kind"], item["title"])
+
+
+def meters(week: dict, data: dict, today: date) -> list[dict]:
+    """The week so far. A day checked off on the page counts when Garmin has nothing of that kind,
+    and a run counts its planned miles."""
+    days = [day for day in week["days"] if day <= today]
+    recorded = [item for item in data.get("activities", []) if week["start"].isoformat() <= item["date"] <= today.isoformat()]
+    counts = {kind: sum(item["kind"] == kind for item in recorded) for kind in ("run", "swim", "strength", "calisthenics")}
+    miles = sum(item["miles"] for item in recorded if item["kind"] == "run")
+    for day in days:
+        garmin_kinds = {item["kind"] for item in recorded if item["date"] == day.isoformat()}
+        for mark in data.get("marks", []):
+            if mark["date"] == day.isoformat() and mark["kind"] in counts and mark["kind"] not in garmin_kinds:
+                counts[mark["kind"]] += 1
+                if mark["kind"] == "run":
+                    miles += sum(item.get("miles", 0) for item in week["days"][day] if item["kind"] == "run")
+    planned = lambda kind: sum(item["kind"] == kind for items in week["days"].values() for item in items)
+    return [
+        {"label": "Miles", "done": round(miles, 1), "target": week["target"]},
+        {"label": "Runs", "done": counts["run"], "target": week["runs"]},
+        {"label": "Swims", "done": counts["swim"], "target": week["swims"]},
+        {"label": "Gym", "done": counts["strength"], "target": week["strength"]},
+        {"label": "Calisthenics", "done": counts["calisthenics"], "target": planned("calisthenics")},
+    ]
+
+
+def next_gym(week: dict, today: date) -> str | None:
+    """The next gym day after today this week, so there's a day or two to plan the trip."""
+    for day, items in week["days"].items():
+        strength = next((item for item in items if item["kind"] == "strength"), None)
+        if day > today and strength:
+            when = "Tomorrow" if day == today + timedelta(days=1) else FULL_DAY_NAMES[day.weekday()]
+            return f"{when}: gym, {STRENGTH_LABELS[strength['type']].lower()}"
+    return None
 
 
 def build(today: date, goal: dict | None, data: dict, calendar_days: dict[date, list[dict]]) -> dict:
@@ -376,14 +484,7 @@ def build(today: date, goal: dict | None, data: dict, calendar_days: dict[date, 
         data,
     )
 
-    done = [item for item in activities if week["start"].isoformat() <= item["date"] <= today.isoformat()]
-    miles_done = round(sum(item["miles"] for item in done if item["kind"] == "run"), 1)
-    meters = [
-        {"label": "Miles", "done": miles_done, "target": week["target"]},
-        {"label": "Runs", "done": sum(item["kind"] == "run" for item in done), "target": week["runs"]},
-        {"label": "Swims", "done": sum(item["kind"] == "swim" for item in done), "target": week["swims"]},
-        {"label": "Strength", "done": sum(item["kind"] == "strength" for item in done), "target": week["strength"]},
-    ]
+    finished = done_kinds(data, today.isoformat())
     plan = [
         {
             "day": DAY_NAMES[day.weekday()],
@@ -395,11 +496,24 @@ def build(today: date, goal: dict | None, data: dict, calendar_days: dict[date, 
     ]
     training = {
         "focus": focus(goal, today, week),
-        "today": [{"title": item["title"], "detail": item["detail"]} for item in items],
+        "today": [
+            {
+                "kind": item["kind"],
+                "title": item["title"],
+                "detail": item["detail"],
+                **({"minutes": item["minutes"]} if item.get("minutes") else {}),
+                **({"away": True} if item.get("away") else {}),
+                **({"done": True} if item["kind"] in finished else {}),
+            }
+            for item in items
+        ],
         "why": " ".join(notes) or week_summary(week, goal),
-        "week": [meter for meter in meters if meter["target"]],
+        "week": [meter for meter in meters(week, data, today) if meter["target"]],
         "plan": plan,
     }
+    gym = next_gym(week, today)
+    if gym:
+        training["gymNext"] = gym
     if goal:
         training["goal"] = goal
     return training
@@ -417,7 +531,8 @@ def fetch(now: datetime) -> dict:
         data = None
     last_monday = monday(today) - timedelta(days=7)
     calendar_days = calendars.week(last_monday, 14)
-    training = build(today, goal, data or {}, calendar_days)
+    marks = (store.latest_pushed("done") or {}).get("marks", [])
+    training = build(today, goal, {**(data or {}), "marks": marks}, calendar_days)
     if data is None:
         training["why"] = f"Garmin was unavailable, so this skips yesterday's workouts and last night's sleep. {training['why']}"
     return training
