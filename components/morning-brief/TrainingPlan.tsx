@@ -176,10 +176,6 @@ export default function TrainingPlan({
             </div>
           ))}
         </dl>
-        <p className="muted fine-print">
-          Workouts your watch records count on their own. Check off anything it doesn&apos;t, such as calisthenics. A plan
-          from simple rules, not coaching or medical advice. Ease off if something hurts.
-        </p>
       </details>
       <GoalForm key={training.goal ? JSON.stringify(training.goal) : "none"} training={training} onSave={onSaveGoal} />
     </>

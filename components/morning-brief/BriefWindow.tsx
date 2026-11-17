@@ -12,7 +12,15 @@ function minimizedTitles(): string[] {
   }
 }
 
-export default function BriefWindow({ title, children }: { title: string; children: React.ReactNode }) {
+export default function BriefWindow({
+  title,
+  onMove,
+  children,
+}: {
+  title: string;
+  onMove?: (by: -1 | 1) => void; // moves the window up or down the page
+  children: React.ReactNode;
+}) {
   const [minimized, setMinimized] = useState(false);
   const bodyId = useId();
 
@@ -37,7 +45,22 @@ export default function BriefWindow({ title, children }: { title: string; childr
           aria-controls={bodyId}
           onClick={toggle}
         />
-        <h2>{title}</h2>
+        {onMove ? (
+          <h2
+            tabIndex={0}
+            aria-description="Drag the title bar, or press the up and down arrows, to move this window"
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+                onMove(event.key === "ArrowUp" ? -1 : 1);
+              }
+            }}
+          >
+            {title}
+          </h2>
+        ) : (
+          <h2>{title}</h2>
+        )}
       </div>
       <div id={bodyId} className="window-body" hidden={minimized}>
         {children}

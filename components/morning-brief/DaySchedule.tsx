@@ -14,6 +14,7 @@ const VIEWS: { view: View; label: string }[] = [
 ];
 
 const VIEW_KEY = "morning-brief-calendar-view";
+const SUGGESTIONS_KEY = "morning-brief-show-suggestions";
 
 // Shared events show in either person's view.
 const SHOWN: Record<View, Owner[]> = {
@@ -216,6 +217,14 @@ function EventForm({ date, onAdd }: { date: string; onAdd?: AddEvent }) {
   );
 }
 
+function savedShowSuggestions(): boolean {
+  try {
+    return window.localStorage.getItem(SUGGESTIONS_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
 function savedView(): View {
   try {
     const saved = window.localStorage.getItem(VIEW_KEY);
@@ -240,7 +249,20 @@ export default function DaySchedule({
 }) {
   const [view, setView] = useState<View>("both");
   const [openSuggestion, setOpenSuggestion] = useState<string | null>(null);
-  useEffect(() => setView(savedView()), []);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  useEffect(() => {
+    setView(savedView());
+    setShowSuggestions(savedShowSuggestions());
+  }, []);
+
+  function toggleSuggestions(next: boolean) {
+    setShowSuggestions(next);
+    try {
+      window.localStorage.setItem(SUGGESTIONS_KEY, next ? "on" : "off");
+    } catch {
+      // The choice just won't be remembered.
+    }
+  }
 
   function choose(next: View) {
     setView(next);
@@ -256,7 +278,7 @@ export default function DaySchedule({
   // Suggestions are for his day, so her view leaves them out. All-day events stay on top.
   const rows: Entry[] = [
     ...shown.map((item): Entry => ({ kind: "event", item })),
-    ...(view === "hers" ? [] : suggestions.map((item): Entry => ({ kind: "suggestion", item }))),
+    ...(view === "hers" || !showSuggestions ? [] : suggestions.map((item): Entry => ({ kind: "suggestion", item }))),
   ].sort((a, b) => {
     const aAllDay = a.kind === "event" && Boolean(a.item.allDay);
     const bAllDay = b.kind === "event" && Boolean(b.item.allDay);
@@ -275,6 +297,17 @@ export default function DaySchedule({
             </button>
           ))}
         </div>
+      )}
+      {suggestions.length > 0 && view !== "hers" && (
+        <label className="suggestions-switch">
+          <input
+            type="checkbox"
+            role="switch"
+            checked={showSuggestions}
+            onChange={(event) => toggleSuggestions(event.target.checked)}
+          />
+          Suggested times
+        </label>
       )}
       {rows.length === 0 ? (
         <p>Nothing on the calendar today.</p>
