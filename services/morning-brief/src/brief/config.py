@@ -29,6 +29,14 @@ LEAGUES = {
     "nfl": ("football/nfl", "NFL", 3, {"sea", "lar", "sf", "den", "min", "bal", "buf"}),
     "nhl": ("hockey/nhl", "NHL", 1, {"utah", "vgk", "col", "chi", "bos"}),
     "epl": ("soccer/eng.1", "Premier League", 3, ALL_TEAMS),
+    # The biggest clubs from the five main leagues. Matches are Tuesday and Wednesday, so two days
+    # catches each round.
+    "ucl": (
+        "soccer/uefa.champions",
+        "Champions League",
+        2,
+        {"ars", "liv", "mnc", "rma", "bar", "atm", "int", "mil", "juv", "mun", "dor", "b04", "psg", "olm"},
+    ),
     "laliga": ("soccer/esp.1", "La Liga", 3, {"rma", "bar", "atm"}),
     "seriea": ("soccer/ita.1", "Serie A", 3, {"juv", "int", "mil", "nap", "roma"}),
     "bundesliga": ("soccer/ger.1", "Bundesliga", 3, {"mun", "dor", "b04"}),

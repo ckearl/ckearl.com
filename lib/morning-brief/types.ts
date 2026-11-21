@@ -3,13 +3,14 @@
 
 export type Team = { abbr: string; name: string; bg: string; fg: string };
 
-export type League = "nba" | "epl" | "laliga" | "seriea" | "bundesliga" | "ligue1" | "nfl" | "nhl" | "mlb";
+export type League = "nba" | "epl" | "ucl" | "laliga" | "seriea" | "bundesliga" | "ligue1" | "nfl" | "nhl" | "mlb";
 
 export type Score = {
   home: { abbr: string; name: string; score: number };
   away: { abbr: string; name: string; score: number };
   status: string;
   url?: string | null; // ESPN Gamecast
+  highlights?: string; // YouTube highlights video
 };
 
 export type Owner = "mine" | "hers" | "shared";
@@ -107,6 +108,8 @@ export type StoryItem = { text: string; source: string; url: string; why?: strin
 
 export type SourceState = "ok" | "stale" | "failed";
 
+export type Soundtrack = { kind: string; title: string; artist: string; why: string; url: string };
+
 export type Brief = {
   date: string;
   generatedAt?: string;
@@ -135,7 +138,8 @@ export type Brief = {
   teams?: { team: Team; update: string; next: string }[];
   listening?: {
     yesterday: { minutes: number; topArtist: string; topSong: string };
-    soundtrack: { kind: string; title: string; artist: string; why: string; url: string };
+    soundtracks?: Soundtrack[];
+    soundtrack?: Soundtrack; // briefs from before there were several picks
   };
   words?: {
     english: { word: string; partOfSpeech: string; definition: string; example?: string };

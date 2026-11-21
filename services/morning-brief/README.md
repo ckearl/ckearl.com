@@ -14,7 +14,16 @@ An iPhone Shortcut sends the Reminders list to `POST /brief/todos` before the br
 doesn't list them; the day plan picks up to two. A duration in a reminder's notes, such as
 "25 min, drive to the recycling center", is the least time it's given.
 
-Listening comes from the `spotify_stats` snapshot in S3. The ski report only appears in season
+Each score links to ESPN Gamecast and, when one is found, a YouTube highlights video: the league's
+own channel first (a US broadcaster's too for soccer), then a search for that game. A video counts
+only if its title names both teams and says highlights. Make the key with
+`python3 scripts/connect_youtube.py` after connecting Google.
+
+Listening comes from the `spotify_stats` snapshot in S3. The soundtrack is five picks a day: an
+unexplored corner of an artist or genre you play, a new release from an artist you play, and an
+album back in rotation, with nothing repeated within three weeks. The first two use the Spotify
+API with the `spotify_stats` app's credentials (`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`,
+`SPOTIFY_REFRESH_TOKEN` in `.env`). The ski report only appears in season
 when 8 or more inches is forecast for the Cottonwoods in the next three days.
 
 Calendar reads every calendar on the Google account, skipping holidays and birthdays, whether

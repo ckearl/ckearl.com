@@ -1,6 +1,7 @@
 import DaySchedule, { type AddEvent, type MarkSuggestion, type ReplanDay } from "@/components/morning-brief/DaySchedule";
 import MealPlan, { type SaveMeals } from "@/components/morning-brief/MealPlan";
 import ScoresStrip from "@/components/morning-brief/ScoresStrip";
+import SoundtrackCarousel from "@/components/morning-brief/SoundtrackCarousel";
 import TeamMonogram from "@/components/morning-brief/TeamMonogram";
 import TrainingPlan, { type MarkDone } from "@/components/morning-brief/TrainingPlan";
 import WindowStack, { type Pane } from "@/components/morning-brief/WindowStack";
@@ -239,17 +240,7 @@ export default function BriefView({
       title: "Today's Soundtrack",
       content: (
         <>
-          <p className="muted">{listening.soundtrack.kind}</p>
-          <p className="soundtrack-title">{listening.soundtrack.title}</p>
-          <p>
-            <strong>{listening.soundtrack.artist}</strong>
-          </p>
-          <p>{listening.soundtrack.why}</p>
-          <div className="info-links">
-            <a href={listening.soundtrack.url} className="gel-button">
-              Open in Spotify
-            </a>
-          </div>
+          <SoundtrackCarousel picks={listening.soundtracks ?? (listening.soundtrack ? [listening.soundtrack] : [])} />
           <h3>Yesterday</h3>
           {listening.yesterday.minutes > 0 ? (
             <p>

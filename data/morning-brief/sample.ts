@@ -11,7 +11,7 @@ export const sampleBrief: Brief = {
       label: "NBA",
       when: "Sunday night",
       games: [
-        { away: { abbr: "lal", name: "Lakers", score: 108 }, home: { abbr: "utah", name: "Jazz", score: 114 }, status: "Final" },
+        { away: { abbr: "lal", name: "Lakers", score: 108 }, home: { abbr: "utah", name: "Jazz", score: 114 }, status: "Final", url: "https://www.espn.com/nba/game/_/gameId/1", highlights: "https://www.youtube.com/@NBA" },
         { away: { abbr: "bos", name: "Celtics", score: 121 }, home: { abbr: "ny", name: "Knicks", score: 117 }, status: "Final" },
         { away: { abbr: "okc", name: "Thunder", score: 126 }, home: { abbr: "den", name: "Nuggets", score: 119 }, status: "Final/OT" },
         { away: { abbr: "gs", name: "Warriors", score: 102 }, home: { abbr: "phx", name: "Suns", score: 110 }, status: "Final" },
@@ -203,13 +203,43 @@ export const sampleBrief: Brief = {
   ],
   listening: {
     yesterday: { minutes: 212, topArtist: "Khruangbin", topSong: "Evan Finds the Third Room" },
-    soundtrack: {
-      kind: "Back in rotation",
-      title: "Currents",
-      artist: "Tame Impala",
-      why: "You played it weekly in 2021 and not once since March. It suits an after-work run.",
-      url: "https://open.spotify.com",
-    },
+    soundtracks: [
+      {
+        kind: "Unexplored corner",
+        title: "Lonerism",
+        artist: "Tame Impala",
+        why: "You've spent 61 hours with Tame Impala, mostly on Currents and The Slow Rush, but barely touched this one.",
+        url: "https://open.spotify.com",
+      },
+      {
+        kind: "New release",
+        title: "A La Sala",
+        artist: "Khruangbin",
+        why: "A new album out November 7. You've played Khruangbin for 48 hours.",
+        url: "https://open.spotify.com",
+      },
+      {
+        kind: "Back in rotation",
+        title: "In Rainbows",
+        artist: "Radiohead",
+        why: "You played it for 22 hours, mostly in 2021, and not since March 2024.",
+        url: "https://open.spotify.com",
+      },
+      {
+        kind: "Unexplored corner",
+        title: "Souvlaki",
+        artist: "Slowdive",
+        why: "You play a lot of shoegaze, mostly My Bloody Valentine and Beach House, and almost none of Slowdive.",
+        url: "https://open.spotify.com",
+      },
+      {
+        kind: "Back in rotation",
+        title: "Blonde",
+        artist: "Frank Ocean",
+        why: "You played it for 30 hours, mostly in 2019, and not since June 2025.",
+        url: "https://open.spotify.com",
+      },
+    ],
   },
   words: {
     english: {

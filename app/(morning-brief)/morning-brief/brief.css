@@ -84,24 +84,82 @@
   box-shadow: inset 1px 1px #fff;
 }
 
-a.score-card {
+button.score-card {
   display: block;
+  font: inherit;
   color: inherit;
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
 }
 
-a.score-card:hover {
+button.score-card:hover {
   border-color: #16507f;
   box-shadow: inset 0 0 0 1px #16507f;
 }
 
-a.score-card:focus-visible {
+.score-card:focus-visible,
+.score-card.is-open a:focus-visible,
+.score-close:focus-visible {
   outline: 2px solid var(--paper);
   outline-offset: 1px;
 }
 
-.is-dragging a.score-card {
+.is-dragging .score-card {
   cursor: grabbing;
+}
+
+/* Tapped open: Gamecast on the left, highlights on the right. */
+.score-card.is-open {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 6.5rem;
+  padding: 0;
+}
+
+.score-card.is-open > a,
+.score-card.is-open > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  font-family: var(--font-stack-chrome);
+  font-size: 17px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.score-card.is-open > a {
+  color: var(--slate-deep);
+}
+
+.score-card.is-open > a:hover {
+  color: var(--paper);
+  background: #16507f;
+}
+
+.score-card.is-open > :nth-child(2) {
+  border-left: 1px solid var(--slate-deep);
+}
+
+.score-card.is-open > span {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--slate-mid);
+}
+
+.score-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  font: inherit;
+  line-height: 1;
+  color: var(--slate-mid);
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .score-side {
@@ -796,6 +854,79 @@ a.score-card:focus-visible {
   font-family: var(--font-stack-chrome);
   font-size: 2rem;
   line-height: 1.15;
+}
+
+.soundtrack-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.soundtrack-track::-webkit-scrollbar {
+  display: none;
+}
+
+.soundtrack-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.soundtrack-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.soundtrack-controls button {
+  min-width: 2rem;
+  min-height: 2rem;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate);
+  background: var(--tan-light);
+  border: 1px solid var(--slate);
+  cursor: pointer;
+}
+
+.soundtrack-controls button:focus-visible {
+  outline: 2px solid var(--slate-deep);
+  outline-offset: 1px;
+}
+
+.soundtrack-dots {
+  display: flex;
+  gap: 0.15rem;
+}
+
+/* A small square inside a full-size tap target. */
+.soundtrack-controls .soundtrack-dots button {
+  min-width: 1.6rem;
+  background: none;
+  border: none;
+}
+
+.soundtrack-dots button::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  margin: auto;
+  border: 1px solid var(--slate);
+}
+
+.soundtrack-dots button[aria-current="true"]::before {
+  background: var(--slate);
+}
+
+.soundtrack-controls .soundtrack-pause {
+  margin-left: auto;
+  padding: 0 0.7rem;
 }
 
 .word-pair {

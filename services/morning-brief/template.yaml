@@ -14,6 +14,23 @@ Parameters:
   SpotifyBucket:
     Type: String
     Description: spotify_stats bucket holding the listening snapshot (from .env via scripts/deploy.sh)
+  SpotifyClientId:
+    Type: String
+    Default: ""
+    Description: spotify_stats app client, for discographies and new releases (from .env via scripts/deploy.sh)
+  SpotifyClientSecret:
+    Type: String
+    Default: ""
+    NoEcho: true
+  SpotifyRefreshToken:
+    Type: String
+    Default: ""
+    NoEcho: true
+  YouTubeApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: YouTube Data API key for score highlights (from .env via scripts/deploy.sh)
   GoogleClientId:
     Type: String
     Description: Google OAuth client (from .env via scripts/deploy.sh)
@@ -96,6 +113,10 @@ Resources:
         Variables:
           BRIEF_TABLE: !Ref BriefTable
           SPOTIFY_BUCKET: !Ref SpotifyBucket
+          SPOTIFY_CLIENT_ID: !Ref SpotifyClientId
+          SPOTIFY_CLIENT_SECRET: !Ref SpotifyClientSecret
+          SPOTIFY_REFRESH_TOKEN: !Ref SpotifyRefreshToken
+          YOUTUBE_API_KEY: !Ref YouTubeApiKey
           GOOGLE_CLIENT_ID: !Ref GoogleClientId
           GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
           GOOGLE_REFRESH_TOKEN: !Ref GoogleRefreshToken

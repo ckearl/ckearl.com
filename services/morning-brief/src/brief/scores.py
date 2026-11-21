@@ -2,7 +2,7 @@
 
 from datetime import date, timedelta
 
-from brief import config
+from brief import config, highlights
 from brief.http import get_json
 
 BASE_URL = "https://site.api.espn.com/apis/site/v2/sports"
@@ -30,22 +30,29 @@ def parse_games(payload: dict, league: str, followed: set[str] | None) -> list[d
         competition = event["competitions"][0]
         sides = {
             competitor["homeAway"]: {
+                "_team": competitor["team"],
                 "abbr": abbreviation(league, competitor["team"]),
                 "name": competitor["team"]["shortDisplayName"],
                 "score": int(competitor["score"]),
             }
             for competitor in competition["competitors"]
         }
+        teams = {place: side.pop("_team") for place, side in sides.items()}
         if followed is not None and not followed & {sides["home"]["abbr"], sides["away"]["abbr"]}:
             continue
-        games.append(
-            {
-                "home": sides["home"],
-                "away": sides["away"],
-                "status": event["status"]["type"]["shortDetail"],
-                "url": gamecast_url(event),
+        game = {
+            "home": sides["home"],
+            "away": sides["away"],
+            "status": event["status"]["type"]["shortDetail"],
+            "url": gamecast_url(event),
+        }
+        if event.get("date"):
+            # Only for finding highlights; highlights.attach removes it.
+            game["_match"] = {
+                "names": [highlights.aliases(teams["away"]), highlights.aliases(teams["home"])],
+                "start": highlights.parse_time(event["date"]),
             }
-        )
+        games.append(game)
     return games
 
 
@@ -65,4 +72,5 @@ def fetch(today: date) -> list[dict]:
             games += parse_games(get_json(f"{BASE_URL}/{path}/scoreboard", {"dates": day}), league, followed)
         if games:
             groups.append({"league": league, "label": label, "when": window_label(today, days), "games": games})
+    highlights.attach(groups)
     return groups

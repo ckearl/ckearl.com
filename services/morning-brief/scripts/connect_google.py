@@ -51,17 +51,17 @@ def set_env(values: dict) -> None:
     ENV_PATH.chmod(0o600)
 
 
-def main() -> None:
-    if len(sys.argv) > 2:
-        sys.exit(__doc__)
-    if len(sys.argv) == 2:
-        client = json.loads(Path(sys.argv[1]).expanduser().read_text())["installed"]
-    else:
-        saved = dict(re.findall(r"^(GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET)=(.+)$", ENV_PATH.read_text(), flags=re.M))
-        if len(saved) != 2:
-            sys.exit("No Google client in .env yet. Pass the client_secret JSON file.\n\n" + __doc__)
-        client = {"client_id": saved["GOOGLE_CLIENT_ID"], "client_secret": saved["GOOGLE_CLIENT_SECRET"]}
+def saved_client() -> dict:
+    """The OAuth client already in .env, from an earlier run."""
+    saved = dict(re.findall(r"^(GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET)=(.+)$", ENV_PATH.read_text(), flags=re.M))
+    if len(saved) != 2:
+        sys.exit("No Google client in .env yet. Pass the client_secret JSON file.\n\n" + __doc__)
+    return {"client_id": saved["GOOGLE_CLIENT_ID"], "client_secret": saved["GOOGLE_CLIENT_SECRET"]}
 
+
+def sign_in(client: dict, scope: str, offline: bool = True) -> dict:
+    """Opens Google's sign-in page for this scope and returns the tokens. With offline=False there's
+    no refresh token, only an access token that expires within the hour."""
     server = HTTPServer(("127.0.0.1", 0), Callback)
     redirect_uri = f"http://127.0.0.1:{server.server_port}"
     state = secrets.token_urlsafe(24)
@@ -72,8 +72,8 @@ def main() -> None:
             "client_id": client["client_id"],
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": SCOPE,
-            "access_type": "offline",
+            "scope": scope,
+            "access_type": "offline" if offline else "online",
             "prompt": "consent",
             "state": state,
             "code_challenge": challenge,
@@ -99,7 +99,18 @@ def main() -> None:
         }
     ).encode()
     with urllib.request.urlopen(urllib.request.Request(TOKEN_URL, data=body)) as response:
-        tokens = json.load(response)
+        return json.load(response)
+
+
+def main() -> None:
+    if len(sys.argv) > 2:
+        sys.exit(__doc__)
+    if len(sys.argv) == 2:
+        client = json.loads(Path(sys.argv[1]).expanduser().read_text())["installed"]
+    else:
+        client = saved_client()
+
+    tokens = sign_in(client, SCOPE)
     if "refresh_token" not in tokens:
         sys.exit("Google didn't return a refresh token. Remove the app's access in your Google account and retry.")
 

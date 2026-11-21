@@ -48,3 +48,9 @@ def save_pushed(kind: str, body: dict) -> None:
 def latest_pushed(kind: str) -> dict | None:
     item = table().get_item(Key={"pk": kind, "date": PUSHED_DATE}).get("Item")
     return json.loads(item["body"]) if item else None
+
+
+def since(day: str) -> list[dict]:
+    """Every saved brief from this date ("YYYY-MM-DD") on, oldest first."""
+    result = table().query(KeyConditionExpression=Key("pk").eq(PARTITION) & Key("date").gte(day))
+    return [json.loads(item["body"]) for item in result.get("Items", [])]

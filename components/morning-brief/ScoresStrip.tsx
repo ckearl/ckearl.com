@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { Brief, League, Score } from "@/lib/morning-brief/types";
 
 const SPEED = 28; // pixels per second
@@ -26,31 +26,56 @@ function Side({ league, team, won }: { league: League; team: Score["home"]; won:
   );
 }
 
-function Card({ league, game, hidden }: { league: League; game: Score; hidden: boolean }) {
-  const content = (
-    <>
+function gameKey(league: League, game: Score) {
+  return `${league}-${game.away.abbr}-${game.home.abbr}`;
+}
+
+type Opened = { key: string | null; toggle: (key: string) => void };
+
+function Card({ league, game, hidden, opened }: { league: League; game: Score; hidden: boolean; opened: Opened }) {
+  const key = gameKey(league, game);
+  const open = opened.key === key;
+  const summary = `${game.away.name} ${game.away.score}, ${game.home.name} ${game.home.score}, ${game.status}`;
+  if (open) {
+    return (
+      <div className="score-card is-open" data-game={key}>
+        {game.url ? (
+          <a href={game.url} target="_blank" rel="noopener noreferrer" draggable={false} tabIndex={hidden ? -1 : undefined}>
+            Gamecast
+          </a>
+        ) : (
+          <span>No Gamecast</span>
+        )}
+        {game.highlights ? (
+          <a href={game.highlights} target="_blank" rel="noopener noreferrer" draggable={false} tabIndex={hidden ? -1 : undefined}>
+            Highlights
+          </a>
+        ) : (
+          <span>No highlights yet</span>
+        )}
+        <button type="button" className="score-close" aria-label={`Close ${summary}`} tabIndex={hidden ? -1 : undefined} onClick={() => opened.toggle(key)}>
+          ×
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="score-card"
+      data-game={key}
+      tabIndex={hidden ? -1 : undefined}
+      aria-label={`${summary}. Show Gamecast and highlights.`}
+      onClick={() => opened.toggle(key)}
+    >
       <Side league={league} team={game.away} won={game.away.score > game.home.score} />
       <Side league={league} team={game.home} won={game.home.score > game.away.score} />
       <p className="score-status">{game.status}</p>
-    </>
-  );
-  if (!game.url) return <div className="score-card">{content}</div>;
-  return (
-    <a
-      className="score-card"
-      href={game.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      draggable={false}
-      tabIndex={hidden ? -1 : undefined}
-      aria-label={`${game.away.name} ${game.away.score}, ${game.home.name} ${game.home.score}, ${game.status}. Open on ESPN.`}
-    >
-      {content}
-    </a>
+    </button>
   );
 }
 
-function Scores({ scores, hidden = false }: { scores: Brief["scores"]; hidden?: boolean }) {
+function Scores({ scores, hidden = false, opened }: { scores: Brief["scores"]; hidden?: boolean; opened: Opened }) {
   return scores.map((group) => (
     <Fragment key={group.league}>
       <div className="score-label">
@@ -58,7 +83,7 @@ function Scores({ scores, hidden = false }: { scores: Brief["scores"]; hidden?: 
         <span>{group.when}</span>
       </div>
       {group.games.map((game) => (
-        <Card key={game.away.abbr} league={group.league} game={game} hidden={hidden} />
+        <Card key={gameKey(group.league, game)} league={group.league} game={game} hidden={hidden} opened={opened} />
       ))}
     </Fragment>
   ));
@@ -66,6 +91,27 @@ function Scores({ scores, hidden = false }: { scores: Brief["scores"]; hidden?: 
 
 export default function ScoresStrip({ scores }: { scores: Brief["scores"] }) {
   const stripRef = useRef<HTMLDivElement>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const openRef = useRef(openKey);
+  const opened: Opened = { key: openKey, toggle: (key) => setOpenKey((current) => (current === key ? null : key)) };
+
+  // An open card stays put until a tap elsewhere or Escape closes it.
+  useEffect(() => {
+    openRef.current = openKey;
+    if (!openKey) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target as Element).closest(".score-card.is-open")) setOpenKey(null);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenKey(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openKey]);
 
   useEffect(() => {
     const strip = stripRef.current!;
@@ -93,7 +139,7 @@ export default function ScoresStrip({ scores }: { scores: Brief["scores"] }) {
     const run = (time: number) => {
       const seconds = Math.min((time - last) / 1000, 0.05);
       last = time;
-      if (!holding && !hovering && !focused && !reduceMotion && time > pausedUntil) {
+      if (!holding && !hovering && !focused && !openRef.current && !reduceMotion && time > pausedUntil) {
         position += SPEED * seconds;
         if (position >= copyWidth()) position -= copyWidth();
         strip.scrollLeft = position;
@@ -134,13 +180,17 @@ export default function ScoresStrip({ scores }: { scores: Brief["scores"] }) {
       pause();
     };
 
+    // A drag that ends over a card isn't a tap on it.
     const onClick = (event: MouseEvent) => {
-      if (dragged) event.preventDefault();
+      if (dragged) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       dragged = false;
     };
 
     const onFocusIn = (event: FocusEvent) => {
-      focused = (event.target as Element).matches("a:focus-visible");
+      focused = (event.target as Element).matches("a:focus-visible, button:focus-visible");
     };
 
     const onFocusOut = () => {
@@ -210,10 +260,10 @@ export default function ScoresStrip({ scores }: { scores: Brief["scores"] }) {
     <section className="scores" aria-label="Recent scores">
       <div className="scores-track" ref={stripRef} tabIndex={0}>
         <div className="scores-copy">
-          <Scores scores={scores} />
+          <Scores scores={scores} opened={opened} />
         </div>
         <div className="scores-copy" aria-hidden="true">
-          <Scores scores={scores} hidden />
+          <Scores scores={scores} hidden opened={opened} />
         </div>
       </div>
     </section>

@@ -10,4 +10,6 @@ All logos are trademarks of their teams. These are for a private page.
 - NBA retro logos: github.com/TGOlson/nba-logos, using 1996 (no license stated, scraped
   from basketball-reference). Moved franchises use their 1990s identity: Sonics for the
   Thunder, Bullets for the Wizards, Vancouver for Memphis, New Jersey for Brooklyn.
+- Champions League (`ucl/`): copies of the club's logo from its domestic league folder, and
+  ESPN's for clubs outside those leagues. Bundesliga `scp` is St. Pauli, so Sporting CP uses ESPN's.
 - Utah Jazz (1980-1996), and hand-picked NFL and European club logos: Wikimedia Commons.
