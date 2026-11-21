@@ -12,7 +12,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 
-from brief.http import get_json
+from brief.http import HEADERS, get_json
 
 logger = logging.getLogger(__name__)
 
@@ -92,15 +92,16 @@ def watch_url(video_id: str) -> str:
 
 class YouTube:
     def __init__(self, key: str) -> None:
-        self.key = key
+        # In a header, not the URL, so a logged request error can't include the key.
+        self.headers = {**HEADERS, "X-Goog-Api-Key": key}
         self.searches = 0
 
     def uploads(self, channel: str, since: datetime, rank: int) -> list[dict]:
         """The channel's uploads, newest first, back to `since`."""
         videos, token = [], None
         for _ in range(MAX_PAGES):
-            params = {"part": "snippet", "playlistId": "UU" + channel[2:], "maxResults": 50, "key": self.key}
-            body = get_json(f"{API}/playlistItems", {**params, **({"pageToken": token} if token else {})})
+            params = {"part": "snippet", "playlistId": "UU" + channel[2:], "maxResults": 50}
+            body = get_json(f"{API}/playlistItems", {**params, **({"pageToken": token} if token else {})}, self.headers)
             for item in body.get("items", []):
                 snippet = item["snippet"]
                 videos.append(
@@ -125,8 +126,8 @@ class YouTube:
                 "q": f"{game['away']['name']} vs {game['home']['name']} highlights",
                 "publishedAfter": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "publishedBefore": (start + POSTED_WITHIN).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "key": self.key,
             },
+            self.headers,
         )
         return [
             {"id": item["id"]["videoId"], "title": item["snippet"]["title"], "published": item["snippet"]["publishedAt"], "rank": 99}

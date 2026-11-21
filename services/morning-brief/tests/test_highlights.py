@@ -113,3 +113,12 @@ def test_scores_carry_match_details_from_espn():
     assert parsed["_match"]["start"] == datetime(2026, 11, 20, 1, tzinfo=timezone.utc)
     assert "knicks" in parsed["_match"]["names"][0]
     assert "_team" not in parsed["home"]
+
+
+def test_the_api_key_never_goes_in_a_url(monkeypatch):
+    calls = []
+    monkeypatch.setattr(highlights, "get_json", lambda url, params=None, headers=None: calls.append((url, params, headers)) or {"items": []})
+    youtube = highlights.YouTube("secret")
+    youtube.uploads("UCabc", datetime(2026, 11, 19, tzinfo=timezone.utc), 0)
+    youtube.search(game(KNICKS, WOLVES))
+    assert all("secret" not in url and "secret" not in str(params) and headers["X-Goog-Api-Key"] == "secret" for url, params, headers in calls)
